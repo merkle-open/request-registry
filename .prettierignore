@@ -1,0 +1,13 @@
+# Node
+**/node_modules
+**/package.json
+**/package-lock.json
+
+# Generated
+**/lerna.json
+
+# Build
+**/build
+**/dist
+**/public
+**/coverage

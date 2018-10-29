@@ -1,0 +1,29 @@
+{
+  "name": "request-registry",
+  "version": "1.0.0",
+  "main": "src/",
+  "module": "src/",
+  "scripts": {
+    "prettier": "prettier --config .prettier.js --write \"src/**/*.ts\"",
+    "test": "jest",
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "MIT",
+  "description": "Type safe promise based HTTP request registry for the browser",
+  "dependencies": {
+    "@types/node": "8.10.36",
+    "fetch-mock": "7.2.2",
+    "fetch-ponyfill": "6.0.2"
+  },
+  "devDependencies": {
+    "@namics/prettier-config": "0.2.0",
+    "@types/fetch-mock": "6.0.4",
+    "@types/jest": "23.3.8",
+    "jest": "23.6.0",
+    "prettier": "1.14.3",
+    "ts-jest": "23.10.4",
+    "typescript": "3.1.3",
+    "xhr-mock": "2.4.1"
+  }
+}
