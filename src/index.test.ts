@@ -1,5 +1,5 @@
 import fetchMock from 'fetch-mock';
-import { createGetEndpoint } from './index';
+import { createGetEndpoint, createGetEndpointConverter } from './index';
 
 afterEach(() => {
 	fetchMock.restore();
@@ -67,12 +67,21 @@ test('should fire the error function once a request fails', async () => {
 	expect(error.message).toEqual("Unexpected status 404 - \"Not Found\".");
 });
 
-
 test('should allow to use a custom loader', async () => {
-	const userEndpoint = createGetEndpoint<{ id: string }, { firstName: string }>({
-		url: (keys) => `http://example.com/user/${keys.id}`,
-		loader: async () => ({ firstName: 'Sue'})
+	const userEndpoint = createGetEndpoint<{ a: number, b :number }, { sum: number }>({
+		url: (keys) => `http://example.com/sum/${keys.a}/${keys.b}`,
+		loader: async ({a, b}) => ({ sum: a + b})
 	});
-	const user = await userEndpoint({ id: '4' });
-	expect(user).toEqual({ firstName: 'Sue' });
+	const user = await userEndpoint({ a: 1, b: 2 });
+	expect(user).toEqual({ sum: 3 });
+});
+
+test('should allow to use a converter', async () => {
+	fetchMock.get('http://example.com/user/4', () => ({ firstName: 'Joe', lastName: 'Doe' }));
+	const userEndpoint = createGetEndpoint<{ id: string }, { firstName: string, lastName: string }>({
+		url: (keys) => `http://example.com/user/${keys.id}`,
+	});
+	const fullNameConverter = createGetEndpointConverter(userEndpoint, (data) => data.firstName + ' ' + data.lastName);
+	const user = await fullNameConverter({ id: '4' });
+	expect(user).toEqual('Joe Doe');
 });
