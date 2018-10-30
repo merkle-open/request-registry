@@ -4,21 +4,16 @@
   "main": "src/",
   "module": "src/",
   "scripts": {
+    "commit": "git-cz",
     "prettier": "prettier --config .prettier.js --write \"src/**/*.ts\"",
     "size": "npx size-limit",
+    "release": "standard-version",
     "test": "jest",
     "build": "tsc"
   },
   "author": "",
   "license": "MIT",
   "description": "Type safe promise based HTTP request registry for the browser",
-  "size-limit": [
-    {
-      "path": "src/index.js",
-      "limit": "1 KB",
-      "ignore": ["fetch-ponyfill"]
-    }
-  ],
   "dependencies": {
     "@types/node": "8.10.36",
     "fetch-mock": "7.2.2",
@@ -28,10 +23,27 @@
     "@namics/prettier-config": "0.2.0",
     "@types/fetch-mock": "6.0.4",
     "@types/jest": "23.3.8",
+    "commitizen": "3.0.4",
+    "cz-conventional-changelog": "2.1.0",
     "jest": "23.6.0",
     "prettier": "1.14.3",
+    "standard-version": "4.4.0",
     "ts-jest": "23.10.4",
     "typescript": "3.1.3",
     "xhr-mock": "2.4.1"
-  }
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "size-limit": [
+    {
+      "path": "src/index.js",
+      "limit": "1.5 KB",
+      "ignore": [
+        "fetch-ponyfill"
+      ]
+    }
+  ]
 }
