@@ -57,7 +57,7 @@ interface Cache<TResult> {
 	get(cacheKey: string): Promise<TResult> | undefined;
 	set(cacheKey: string, value: Promise<TResult>): any;
 	delete(cacheKey: string): void;
-	keys(): Iterable<string> | Array<string>;
+	clear(): void;
 }
 
 export function createGetEndpoint<TKeys, TResult>(
@@ -126,7 +126,7 @@ export function createGetEndpoint<TKeys, TResult>(
 			loader,
 			clearCache: () => {
 				api.cacheCreation = undefined;
-				Array.from(cache.keys()).forEach((key) => cache.delete(key));
+				cache.clear();
 			},
 			cacheCreation: undefined,
 			getCacheKey: (keys: TKeys) =>
