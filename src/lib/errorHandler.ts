@@ -11,8 +11,11 @@ export type ErrorResponseError = {
 
 export function errorHandler(response: Response, errorHandlingAttemps: Array<string>): Promise<string> {
 	// Try to extract the result to know the error reason
+	// to allow resolving the error
 	const errorResponseContentPromise: Promise<{ [key: string]: any }> = response
+		// Clone to prevent the fetch body to be used
 		.clone()
+		// Text to support JSON & text
 		.text()
 		.catch((resultText) => {
 			try {
@@ -21,6 +24,7 @@ export function errorHandler(response: Response, errorHandlingAttemps: Array<str
 				return { message: resultText };
 			}
 		})
+		// If text parsing failed provide an empty object
 		.catch(() => ({}));
 	return errorResponseContentPromise.then((errorResponseContent) =>
 		broadcastAjaxError(response, errorResponseContent, errorHandlingAttemps)

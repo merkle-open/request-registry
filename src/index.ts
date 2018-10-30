@@ -3,7 +3,7 @@ export { AJAX_ERROR_EVENT_NAME, AjaxError } from './lib/errorHandler';
 
 export interface EnpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
 	url: (keys: TKeysBind) => string;
-	header?: { [keys: string]: (keys: TKeysBind) => string };
+	headers?: { [keys: string]: (keys: TKeysBind) => string };
 	/**
 	 * Wether to cache the request - true by default
 	 */
@@ -12,6 +12,10 @@ export interface EnpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
 	 * A cache store
 	 */
 	cache?: Cache<TResult>;
+	/**
+	 * A function which returns false if the cache is invalid
+	 */
+	cacheValidator?: (api: EndpointGetFunction<TKeysBind, TResult>) => boolean;
 	/**
 	 * A custom loader
 	 */
@@ -39,7 +43,12 @@ export interface EndpointGetFunction<TKeys, TResult> {
 	/**
 	 * Cache Key
 	 */
-	getCacheKey: (keys: TKeys) => string
+	getCacheKey: (keys: TKeys) => string;
+	/**
+	 * The time of the first write into the cache
+	 * will be reset on clearCache
+	 */
+	cacheCreation: Date | undefined;
 }
 
 export type Cachable<T = string> = { cacheKey: string; value: T };
@@ -55,13 +64,10 @@ export function createGetEndpoint<TKeys, TResult>(
 	options: EnpointGetOptions<TKeys, TResult>
 ): EndpointGetFunction<TKeys, TResult> {
 	/** Some requests require special headers like auth tokens */
-	const headerTemplate = options.header || {};
+	const headerTemplate = options.headers || {};
 	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
 	const cache: Cache<TResult> = options.cache || new Map<string, Promise<TResult>>();
 	/** Clears all cached requests */
-	function clearCache() {
-		Array.from(cache.keys()).forEach((key) => cache.delete(key));
-	}
 	const loader =
 		options.loader ||
 		((keys, url, headers): Promise<TResult> => {
@@ -85,8 +91,11 @@ export function createGetEndpoint<TKeys, TResult>(
 		function transmitFunction(keys: TKeys) {
 			const url = getUrl(keys, options.url);
 			const headers = getHeaders(keys, headerTemplate, headerKeys);
+			// Check if cache is still valid
+			const skipCache =
+				options.cacheRequest === false || (options.cacheValidator && options.cacheValidator(api) === false);
 			// Try to return from cache
-			const cacheKey = options.cacheRequest === false ? null : getCacheKey(url, headers);
+			const cacheKey = skipCache ? null : getCacheKey(url, headers);
 			if (cacheKey) {
 				const ajaxResultFromCache = cache.get(cacheKey);
 				if (ajaxResultFromCache) {
@@ -98,6 +107,9 @@ export function createGetEndpoint<TKeys, TResult>(
 			// Store in cache
 			if (cacheKey) {
 				cache.set(cacheKey, ajaxResultPromise);
+				if (!api.cacheCreation) {
+					api.cacheCreation = new Date();
+				}
 			}
 			// Fire handlers
 			ajaxResultPromise.then(
@@ -112,24 +124,38 @@ export function createGetEndpoint<TKeys, TResult>(
 		},
 		{
 			loader,
-			clearCache,
-			getCacheKey: (keys: TKeys) => getCacheKey(getUrl(keys, options.url), getHeaders(keys, headerTemplate, headerKeys))
+			clearCache: () => {
+				api.cacheCreation = undefined;
+				Array.from(cache.keys()).forEach((key) => cache.delete(key));
+			},
+			cacheCreation: undefined,
+			getCacheKey: (keys: TKeys) =>
+				getCacheKey(getUrl(keys, options.url), getHeaders(keys, headerTemplate, headerKeys)),
 		}
 	);
 	return api;
 }
 
-export function createGetEndpointConverter<TKeys, TResult, TConvertedResult, TResultBind = TResult>(endpoint: EndpointGetFunction<TKeys, TResult>, converter: (result: TResultBind) => TConvertedResult) {
+export function createGetEndpointConverter<TKeys, TResult, TConvertedResult, TResultBind = TResult>(
+	endpoint: EndpointGetFunction<TKeys, TResult>,
+	converter: (result: TResultBind) => TConvertedResult
+) {
 	const api = createGetEndpoint<TKeys, TConvertedResult>({
-		loader: (keys: TKeys) => endpoint(keys).then((result) => converter(result as unknown as TResultBind)),
+		cacheValidator: () => {
+			// If the real endpoint
+			// has an younger or empty cache
+			// also wipe this cache
+			if (api.cacheCreation && (!endpoint.cacheCreation || endpoint.cacheCreation < api.cacheCreation)) {
+				api.clearCache();
+			}
+			return true;
+		},
+		loader: (keys: TKeys) => {
+			return endpoint(keys).then((result) => converter((result as unknown) as TResultBind));
+		},
 		url: (keys: TKeys) => endpoint.getCacheKey(keys),
 	});
-	return Object.assign(api, {
-		clearCache: () => {
-			endpoint.clearCache();
-			api.clearCache();
-		}
-	});
+	return api;
 }
 
 /**
