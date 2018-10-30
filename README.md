@@ -54,7 +54,7 @@ const userLoader = createGetEndpoint({
 
 ## Custom Caches
 
-RequestRegistry can optionaly be provided a custom Map instance to use as its memoization cache. More specifically, any object that implements the methods get(), set(), delete() and clear() can be provided. This allows for custom Maps which implement various cache algorithms to be provided. By default, DataLoader uses the standard Map which simply grows until the Endpoint is released. 
+RequestRegistry can optionaly be provided a custom Map instance to use as its memoization cache. More specifically, any object that implements the methods `get()`, `set()`, `delete()` and `clear()` can be provided. This allows for custom Maps which implement various cache algorithms to be provided. By default, the standard `Map` is used which simply grows until the Endpoint is released. 
 
 ```js
 const customCache = new Map();
@@ -62,4 +62,24 @@ const userLoader = createGetEndpoint({
   url: (keys) => `http://example.com/user/${keys.id}`,
   cache: customCache
 })
+```
+
+## Converters
+
+Converters allow to cache data transformations for cases where the backend data does not match with your frontend
+data structure requirements.
+
+```js
+const userEndpoint = createGetEndpoint<{ id: string }, { firstName: string; lastName: string }>({
+  url: (keys) => `http://example.com/user/${keys.id}`,
+});
+
+const fullNameConverter = createGetEndpointConverter(userEndpoint, (data) => {
+  convertionCount++;
+  return {
+    ...data,
+    fullName: data.firstName + ' ' + data.lastName;
+  }
+});
+fullNameConverter({ id: '4' }).then((data) => console.log(data.fullName));
 ```
