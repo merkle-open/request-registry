@@ -1,7 +1,7 @@
 import { load, recursiveLoader } from './lib/ajax';
 export { AJAX_ERROR_EVENT_NAME, AjaxError } from './lib/errorHandler';
 
-export interface EnpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
+export interface EndpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
 	url: (keys: TKeysBind) => string;
 	headers?: { [keys: string]: (keys: TKeysBind) => string };
 	/**
@@ -30,7 +30,7 @@ export interface EnpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
 	afterError?: (result: Response) => any;
 }
 
-export interface EnpointPostOptions<TKeys, TResult, TKeysBind = TKeys> {
+export interface EndpointPostOptions<TKeys, TResult, TKeysBind = TKeys> {
 	url: (keys: TKeysBind) => string;
 	headers?: { [keys: string]: (keys: TKeysBind) => string };
 	/**
@@ -86,7 +86,7 @@ interface Cache<TResult> {
 }
 
 export function createPostEndpoint<TKeys, TPostBody, TResult>(
-	options: EnpointPostOptions<TKeys, TResult>
+	options: EndpointPostOptions<TKeys, TResult>
 ): EndpointPostFunction<TKeys, TPostBody, TResult> {
 	/** Some requests require special headers like auth tokens */
 	const headerTemplate = options.headers || {};
@@ -141,7 +141,7 @@ export function createPostEndpoint<TKeys, TPostBody, TResult>(
 }
 
 export function createGetEndpoint<TKeys, TResult>(
-	options: EnpointGetOptions<TKeys, TResult>
+	options: EndpointGetOptions<TKeys, TResult>
 ): EndpointGetFunction<TKeys, TResult> {
 	/** Some requests require special headers like auth tokens */
 	const headerTemplate = options.headers || {};
