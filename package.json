@@ -9,6 +9,7 @@
     "size": "npx size-limit",
     "release": "standard-version",
     "test": "jest",
+    "test:watch": "jest --watch",
     "build": "tsc"
   },
   "author": "",

@@ -30,6 +30,23 @@ export interface EnpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
 	afterError?: (result: Response) => any;
 }
 
+export interface EnpointPostOptions<TKeys, TResult, TKeysBind = TKeys> {
+	url: (keys: TKeysBind) => string;
+	headers?: { [keys: string]: (keys: TKeysBind) => string };
+	/**
+	 * A custom loader
+	 */
+	loader?: (keys: TKeys, url: string, headers: { [key: string]: string }, body?: any) => Promise<TResult>;
+	/**
+	 * Success handler
+	 */
+	afterSuccess?: (result: TResult) => any;
+	/**
+	 * Error handler
+	 */
+	afterError?: (result: Response) => any;
+}
+
 export interface EndpointGetFunction<TKeys, TResult> {
 	(keys: TKeys): Promise<TResult>;
 	/**
@@ -51,6 +68,14 @@ export interface EndpointGetFunction<TKeys, TResult> {
 	cacheCreation: Date | undefined;
 }
 
+export interface EndpointPostFunction<TKeys, TPostBody, TResult> {
+	(keys: TKeys, body: TPostBody): Promise<TResult>;
+	/**
+	 * The loader without caching
+	 */
+	loader: (keys: TKeys, url: string, headers: { [key: string]: string }, body: TPostBody) => Promise<TResult>;
+}
+
 export type Cachable<T = string> = { cacheKey: string; value: T };
 
 interface Cache<TResult> {
@@ -58,6 +83,61 @@ interface Cache<TResult> {
 	set(cacheKey: string, value: Promise<TResult>): any;
 	delete(cacheKey: string): void;
 	clear(): void;
+}
+
+export function createPostEndpoint<TKeys, TPostBody, TResult>(
+	options: EnpointPostOptions<TKeys, TResult>
+): EndpointPostFunction<TKeys, TPostBody, TResult> {
+	/** Some requests require special headers like auth tokens */
+	const headerTemplate = options.headers || {};
+	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
+	const loader =
+		options.loader ||
+		((keys, url, headers): Promise<TResult> => {
+			// Execute request
+			const ajaxReponsePromise = recursiveLoader(load, url, 'POST', headers);
+			const ajaxResultPromise = ajaxReponsePromise
+				.then((response) => {
+					if (!response.ok) {
+						throw new Error(`Unexpected status ${response.status} - "${response.statusText}".`);
+					}
+					return response.clone().text();
+				})
+				.then((result) => JSON.parse(result)) as Promise<TResult>;
+
+			return ajaxResultPromise;
+		});
+	/**
+	 * Data loader
+	 */
+	const api: EndpointPostFunction<TKeys, TPostBody, TResult> = Object.assign(
+		function transmitFunction(keys: TKeys, body: TPostBody) {
+			const url = getUrl(keys, options.url);
+			const headers = getHeaders(keys, headerTemplate, headerKeys);
+			// Set default Content-Type header,
+			// otherwise overwrite it with the one passed in by the config
+			headers.value = {
+				'Content-Type': 'application/json',
+				...headers.value
+			}
+			// Execute request
+			const ajaxResultPromise = api.loader(keys, url.value, headers.value, body);
+			// Fire handlers
+			ajaxResultPromise.then(
+				(ajaxResult) => {
+					options.afterSuccess && options.afterSuccess(ajaxResult);
+				},
+				(error) => {
+					options.afterError && options.afterError(error);
+				}
+			);
+			return ajaxResultPromise;
+		},
+		{
+			loader
+		}
+	);
+	return api;
 }
 
 export function createGetEndpoint<TKeys, TResult>(
@@ -72,7 +152,7 @@ export function createGetEndpoint<TKeys, TResult>(
 		options.loader ||
 		((keys, url, headers): Promise<TResult> => {
 			// Execute request
-			const ajaxReponsePromise = recursiveLoader(load, url, headers);
+			const ajaxReponsePromise = recursiveLoader(load, url, 'GET', headers);
 			const ajaxResultPromise = ajaxReponsePromise
 				.then((response) => {
 					if (!response.ok) {

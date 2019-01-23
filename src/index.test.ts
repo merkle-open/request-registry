@@ -1,5 +1,9 @@
 import fetchMock from 'fetch-mock';
-import { createGetEndpoint, createGetEndpointConverter } from './index';
+import {
+	createGetEndpoint,
+	createGetEndpointConverter,
+	createPostEndpoint
+} from './index';
 
 afterEach(() => {
 	fetchMock.restore();
@@ -120,4 +124,13 @@ test('should revoke the cache of converted values if the endpoint cache is clear
 	await fullNameConverter({ id: '4' });
 	await fullNameConverter({ id: '4' });
 	expect(convertionCount).toEqual(2);
+});
+
+test('should execute the POST request', async() => {
+	fetchMock.post('http://example.com/user/4', () => ({foo: 'bar'}));
+	const postEndpoint = createPostEndpoint<{ id: string }, { firstName: string, lastName: string }, {}>({
+		url: (keys) => `http://example.com/user/${keys.id}`,
+	});
+	const user = await postEndpoint({ id: '4' }, {firstName: 'I am', lastName: 'a name!'});
+	expect(user).toEqual({ foo: 'bar' });
 });
