@@ -68,12 +68,12 @@ export interface EndpointGetFunction<TKeys, TResult> {
 	cacheCreation: Date | undefined;
 }
 
-export interface EndpointPostFunction<TKeys, TPostBody, TResult> {
-	(keys: TKeys, body: TPostBody): Promise<TResult>;
+export interface EndpointPostFunction<TKeys, TBody, TResult> {
+	(keys: TKeys, body: TBody): Promise<TResult>;
 	/**
 	 * The loader without caching
 	 */
-	loader: (keys: TKeys, url: string, headers: { [key: string]: string }, body: TPostBody) => Promise<TResult>;
+	loader: (keys: TKeys, url: string, headers: { [key: string]: string }, body: TBody) => Promise<TResult>;
 }
 
 export type Cachable<T = string> = { cacheKey: string; value: T };
@@ -108,9 +108,9 @@ function createLoader<TKeys, TResult>(
 	return loader;
 }
 
-export function createPostEndpoint<TKeys, TPostBody, TResult>(
+export function createPostEndpoint<TKeys, TBody, TResult>(
 	options: EndpointPostOptions<TKeys, TResult>
-): EndpointPostFunction<TKeys, TPostBody, TResult> {
+): EndpointPostFunction<TKeys, TBody, TResult> {
 	/** Some requests require special headers like auth tokens */
 	const headerTemplate = options.headers || {};
 	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
@@ -119,8 +119,8 @@ export function createPostEndpoint<TKeys, TPostBody, TResult>(
 	/**
 	 * Data loader
 	 */
-	const api: EndpointPostFunction<TKeys, TPostBody, TResult> = Object.assign(
-		function transmitFunction(keys: TKeys, body: TPostBody) {
+	const api: EndpointPostFunction<TKeys, TBody, TResult> = Object.assign(
+		function transmitFunction(keys: TKeys, body: TBody) {
 			const url = getUrl(keys, options.url);
 			const headers = getHeaders(keys, headerTemplate, headerKeys);
 			// Set default Content-Type header,
