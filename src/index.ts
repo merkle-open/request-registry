@@ -91,9 +91,9 @@ function createLoader<TKeys, TResult>(
 ) {
 	const loader =
 		options.loader ||
-		((keys, url, headers): Promise<TResult> => {
+		((keys, url, headers, body?): Promise<TResult> => {
 			// Execute request
-			const ajaxReponsePromise = recursiveLoader(load, url, method, headers);
+			const ajaxReponsePromise = recursiveLoader(load, url, method, headers, body);
 			const ajaxResultPromise = ajaxReponsePromise
 				.then((response) => {
 					if (!response.ok) {

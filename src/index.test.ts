@@ -126,11 +126,25 @@ test('should revoke the cache of converted values if the endpoint cache is clear
 	expect(convertionCount).toEqual(2);
 });
 
-test('should execute the POST request', async() => {
-	fetchMock.post('http://example.com/user/4', () => ({foo: 'bar'}));
-	const postEndpoint = createPostEndpoint<{ id: string }, { firstName: string, lastName: string }, {}>({
-		url: (keys) => `http://example.com/user/${keys.id}`,
+describe('POST testing', () => {
+	test('should receive the POST body', async() => {
+		const postBody = {firstName: 'I am', lastName: 'a name!'};
+		fetchMock.post('http://example.com/user/4', () => (url: string, opts: any) => {
+			expect(opts.body).toEqual(postBody);
+			return {foo: 'bar'};
+		});
+		const postEndpoint = createPostEndpoint<{ id: string }, { firstName: string, lastName: string }, {foo: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		const user = await postEndpoint({ id: '4' }, postBody);
 	});
-	const user = await postEndpoint({ id: '4' }, {firstName: 'I am', lastName: 'a name!'});
-	expect(user).toEqual({ foo: 'bar' });
+
+	test('should execute the POST request, and receive response', async() => {
+		fetchMock.post('http://example.com/user/4', () => ({foo: 'bar'}));
+		const postEndpoint = createPostEndpoint<{ id: string }, { firstName: string, lastName: string }, {foo: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		const user = await postEndpoint({ id: '4' }, {firstName: 'I am', lastName: 'a name!'});
+		expect(user).toEqual({ foo: 'bar' });
+	});
 });
