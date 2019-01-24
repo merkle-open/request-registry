@@ -30,7 +30,7 @@ export interface EndpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
 	afterError?: (result: Response) => any;
 }
 
-export interface EndpointPostOptions<TKeys, TResult, TKeysBind = TKeys> {
+export interface EndpointWithBodyOptions<TKeys, TResult, TKeysBind = TKeys> {
 	url: (keys: TKeysBind) => string;
 	headers?: { [keys: string]: (keys: TKeysBind) => string };
 	/**
@@ -68,7 +68,7 @@ export interface EndpointGetFunction<TKeys, TResult> {
 	cacheCreation: Date | undefined;
 }
 
-export interface EndpointPostFunction<TKeys, TBody, TResult> {
+export interface EndpointWithBodyFunction<TKeys, TBody, TResult> {
 	(keys: TKeys, body: TBody): Promise<TResult>;
 	/**
 	 * The loader without caching
@@ -86,7 +86,7 @@ interface Cache<TResult> {
 }
 
 function createLoader<TKeys, TResult>(
-	options: EndpointPostOptions<TKeys, TResult>,
+	options: EndpointWithBodyOptions<TKeys, TResult>,
 	method: string
 ) {
 	const loader =
@@ -108,18 +108,17 @@ function createLoader<TKeys, TResult>(
 	return loader;
 }
 
-export function createPostEndpoint<TKeys, TBody, TResult>(
-	options: EndpointPostOptions<TKeys, TResult>
-): EndpointPostFunction<TKeys, TBody, TResult> {
-	/** Some requests require special headers like auth tokens */
+function createWithBodyEndpoint<TKeys, TBody, TResult>(
+	loader: (keys: TKeys, url: string, headers: { [key: string]: string }) => Promise<TResult>,
+	options: EndpointWithBodyOptions<TKeys, TResult>
+) {
 	const headerTemplate = options.headers || {};
 	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
-	const loader = createLoader(options, 'POST');
-
+	
 	/**
 	 * Data loader
 	 */
-	const api: EndpointPostFunction<TKeys, TBody, TResult> = Object.assign(
+	const api: EndpointWithBodyFunction<TKeys, TBody, TResult> = Object.assign(
 		function transmitFunction(keys: TKeys, body: TBody) {
 			const url = getUrl(keys, options.url);
 			const headers = getHeaders(keys, headerTemplate, headerKeys);
@@ -147,6 +146,22 @@ export function createPostEndpoint<TKeys, TBody, TResult>(
 		}
 	);
 	return api;
+}
+
+export function createPostEndpoint<TKeys, TBody, TResult>(
+	options: EndpointWithBodyOptions<TKeys, TResult>
+): EndpointWithBodyFunction<TKeys, TBody, TResult> {
+	/** Some requests require special headers like auth tokens */
+	const loader = createLoader(options, 'POST');
+	return createWithBodyEndpoint(loader, options);
+}
+
+export function createPutEndpoint<TKeys, TBody, TResult>(
+	options: EndpointWithBodyOptions<TKeys, TResult>
+): EndpointWithBodyFunction<TKeys, TBody, TResult> {
+	/** Some requests require special headers like auth tokens */
+	const loader = createLoader(options, 'PUT');
+	return createWithBodyEndpoint(loader, options);
 }
 
 export function createGetEndpoint<TKeys, TResult>(
