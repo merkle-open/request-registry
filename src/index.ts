@@ -47,6 +47,23 @@ export interface EndpointWithBodyOptions<TKeys, TResult, TKeysBind = TKeys> {
 	afterError?: (result: Response) => any;
 }
 
+export interface EndpointDeleteOptions<TKeys, TResult, TKeysBind = TKeys> {
+	url: (keys: TKeysBind) => string;
+	headers?: { [keys: string]: (keys: TKeysBind) => string };
+	/**
+	 * A custom loader
+	 */
+	loader?: (keys: TKeys, url: string, headers: { [key: string]: string }) => Promise<TResult>;
+	/**
+	 * Success handler
+	 */
+	afterSuccess?: (result: TResult) => any;
+	/**
+	 * Error handler
+	 */
+	afterError?: (result: Response) => any;
+}
+
 export interface EndpointGetFunction<TKeys, TResult> {
 	(keys: TKeys): Promise<TResult>;
 	/**
@@ -74,6 +91,14 @@ export interface EndpointWithBodyFunction<TKeys, TBody, TResult> {
 	 * The loader without caching
 	 */
 	loader: (keys: TKeys, url: string, headers: { [key: string]: string }, body: TBody) => Promise<TResult>;
+}
+
+export interface EndpointDeleteFunction<TKeys, TResult> {
+	(keys: TKeys): Promise<TResult>;
+	/**
+	 * The loader without caching
+	 */
+	loader: (keys: TKeys, url: string, headers: { [key: string]: string }) => Promise<TResult>;
 }
 
 export type Cachable<T = string> = { cacheKey: string; value: T };
@@ -167,12 +192,12 @@ export function createPutEndpoint<TKeys, TBody, TResult>(
 export function createGetEndpoint<TKeys, TResult>(
 	options: EndpointGetOptions<TKeys, TResult>
 ): EndpointGetFunction<TKeys, TResult> {
+	const loader = createLoader(options, 'GET');
 	/** Some requests require special headers like auth tokens */
 	const headerTemplate = options.headers || {};
 	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
 	const cache: Cache<TResult> = options.cache || new Map<string, Promise<TResult>>();
 	/** Clears all cached requests */
-	const loader = createLoader(options, 'GET');
 	
 	/**
 	 * Data loader
@@ -221,6 +246,42 @@ export function createGetEndpoint<TKeys, TResult>(
 			cacheCreation: undefined,
 			getCacheKey: (keys: TKeys) =>
 				getCacheKey(getUrl(keys, options.url), getHeaders(keys, headerTemplate, headerKeys)),
+		}
+	);
+	return api;
+}
+
+export function createDeleteEndpoint<TKeys, TResult>(
+	options: EndpointDeleteOptions<TKeys, TResult>
+): EndpointDeleteFunction<TKeys, TResult> {
+	const loader = createLoader(options, 'DELETE');
+	/** Some requests require special headers like auth tokens */
+	const headerTemplate = options.headers || {};
+	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
+	
+	/**
+	 * Data loader
+	 */
+	const api: EndpointDeleteFunction<TKeys, TResult> = Object.assign(
+		function transmitFunction(keys: TKeys) {
+			const url = getUrl(keys, options.url);
+			const headers = getHeaders(keys, headerTemplate, headerKeys);
+			// Execute request
+			const ajaxResultPromise = api.loader(keys, url.value, headers.value);
+			
+			// Fire handlers
+			ajaxResultPromise.then(
+				(ajaxResult) => {
+					options.afterSuccess && options.afterSuccess(ajaxResult);
+				},
+				(error) => {
+					options.afterError && options.afterError(error);
+				}
+			);
+			return ajaxResultPromise;
+		},
+		{
+			loader
 		}
 	);
 	return api;

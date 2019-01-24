@@ -3,7 +3,8 @@ import {
 	createGetEndpoint,
 	createGetEndpointConverter,
 	createPostEndpoint,
-	createPutEndpoint
+	createPutEndpoint,
+	createDeleteEndpoint
 } from './index';
 
 afterEach(() => {
@@ -160,7 +161,7 @@ describe('PUT testing', () => {
 		const putEndpoint = createPutEndpoint<{ id: string }, { firstName: string, lastName: string }, {foo: string}>({
 			url: (keys) => `http://example.com/user/${keys.id}`,
 		});
-		const user = await putEndpoint({ id: '4' }, putBody);
+		await putEndpoint({ id: '4' }, putBody);
 	});
 
 	test('should execute the PUT request, and receive response', async() => {
@@ -170,5 +171,26 @@ describe('PUT testing', () => {
 		});
 		const user = await putEndpoint({ id: '4' }, {firstName: 'I am', lastName: 'a name!'});
 		expect(user).toEqual({ foo: 'bar' });
+	});
+});
+
+describe('DELETE testing', () => {
+	// TODO: Should we cover the case when the server returns no body, and only returns a 200 OK response?
+	test.skip('should execute the DELETE request, and receive 200', async() => {
+		fetchMock.delete('http://example.com/user/4', 200);
+		const deleteEndpoint = createDeleteEndpoint<{ id: string }, {foo: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		const user = await deleteEndpoint({ id: '4' });
+	});
+
+	test('should execute the DELETE request, and receive a response', async() => {
+		const response = {deleted: true};
+		fetchMock.delete('http://example.com/user/4', response);
+		const deleteEndpoint = createDeleteEndpoint<{ id: string }, {deleted: boolean}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		const deleteMe = await deleteEndpoint({ id: '4' });
+		expect(deleteMe).toEqual(response);
 	});
 });
