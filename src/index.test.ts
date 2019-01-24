@@ -2,7 +2,8 @@ import fetchMock from 'fetch-mock';
 import {
 	createGetEndpoint,
 	createGetEndpointConverter,
-	createPostEndpoint
+	createPostEndpoint,
+	createPutEndpoint
 } from './index';
 
 afterEach(() => {
@@ -145,6 +146,29 @@ describe('POST testing', () => {
 			url: (keys) => `http://example.com/user/${keys.id}`,
 		});
 		const user = await postEndpoint({ id: '4' }, {firstName: 'I am', lastName: 'a name!'});
+		expect(user).toEqual({ foo: 'bar' });
+	});
+});
+
+describe('PUT testing', () => {
+	test('should receive the PUT body', async() => {
+		const putBody = {firstName: 'I am', lastName: 'a name!'};
+		fetchMock.put('http://example.com/user/4', () => (url: string, opts: any) => {
+			expect(opts.body).toEqual(putBody);
+			return {foo: 'bar'};
+		});
+		const putEndpoint = createPutEndpoint<{ id: string }, { firstName: string, lastName: string }, {foo: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		const user = await putEndpoint({ id: '4' }, putBody);
+	});
+
+	test('should execute the PUT request, and receive response', async() => {
+		fetchMock.put('http://example.com/user/4', () => ({foo: 'bar'}));
+		const putEndpoint = createPutEndpoint<{ id: string }, { firstName: string, lastName: string }, {foo: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		const user = await putEndpoint({ id: '4' }, {firstName: 'I am', lastName: 'a name!'});
 		expect(user).toEqual({ foo: 'bar' });
 	});
 });
