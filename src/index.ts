@@ -85,17 +85,15 @@ interface Cache<TResult> {
 	clear(): void;
 }
 
-export function createPostEndpoint<TKeys, TPostBody, TResult>(
-	options: EndpointPostOptions<TKeys, TResult>
-): EndpointPostFunction<TKeys, TPostBody, TResult> {
-	/** Some requests require special headers like auth tokens */
-	const headerTemplate = options.headers || {};
-	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
+function createLoader<TKeys, TResult>(
+	options: EndpointPostOptions<TKeys, TResult>,
+	method: string
+) {
 	const loader =
 		options.loader ||
 		((keys, url, headers): Promise<TResult> => {
 			// Execute request
-			const ajaxReponsePromise = recursiveLoader(load, url, 'POST', headers);
+			const ajaxReponsePromise = recursiveLoader(load, url, method, headers);
 			const ajaxResultPromise = ajaxReponsePromise
 				.then((response) => {
 					if (!response.ok) {
@@ -107,6 +105,17 @@ export function createPostEndpoint<TKeys, TPostBody, TResult>(
 
 			return ajaxResultPromise;
 		});
+	return loader;
+}
+
+export function createPostEndpoint<TKeys, TPostBody, TResult>(
+	options: EndpointPostOptions<TKeys, TResult>
+): EndpointPostFunction<TKeys, TPostBody, TResult> {
+	/** Some requests require special headers like auth tokens */
+	const headerTemplate = options.headers || {};
+	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
+	const loader = createLoader(options, 'POST');
+
 	/**
 	 * Data loader
 	 */
@@ -148,22 +157,8 @@ export function createGetEndpoint<TKeys, TResult>(
 	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
 	const cache: Cache<TResult> = options.cache || new Map<string, Promise<TResult>>();
 	/** Clears all cached requests */
-	const loader =
-		options.loader ||
-		((keys, url, headers): Promise<TResult> => {
-			// Execute request
-			const ajaxReponsePromise = recursiveLoader(load, url, 'GET', headers);
-			const ajaxResultPromise = ajaxReponsePromise
-				.then((response) => {
-					if (!response.ok) {
-						throw new Error(`Unexpected status ${response.status} - "${response.statusText}".`);
-					}
-					return response.clone().text();
-				})
-				.then((result) => JSON.parse(result)) as Promise<TResult>;
-
-			return ajaxResultPromise;
-		});
+	const loader = createLoader(options, 'GET');
+	
 	/**
 	 * Data loader
 	 */
