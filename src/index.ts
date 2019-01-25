@@ -30,13 +30,13 @@ export interface EndpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
 	afterError?: (result: Response) => any;
 }
 
-export interface EndpointWithBodyOptions<TKeys, TResult, TKeysBind = TKeys> {
+export interface EndpointWithBodyOptions<TKeys, TBody, TResult, TKeysBind = TKeys> {
 	url: (keys: TKeysBind) => string;
 	headers?: { [keys: string]: (keys: TKeysBind) => string };
 	/**
 	 * A custom loader
 	 */
-	loader?: (keys: TKeys, url: string, headers: { [key: string]: string }, body?: any) => Promise<TResult>;
+	loader?: (keys: TKeys, url: string, headers: { [key: string]: string }, body: TBody) => Promise<TResult>;
 	/**
 	 * Success handler
 	 */
@@ -111,12 +111,20 @@ interface Cache<TResult> {
 }
 
 function createLoader<TKeys, TResult>(
-	options: EndpointWithBodyOptions<TKeys, TResult>,
-	method: string
+	options: EndpointGetOptions<TKeys, TResult> | EndpointDeleteOptions<TKeys, TResult>,
+	method: 'GET' | 'DELETE'
+): (keys: TKeys, url: string, headers: { [key: string]: string }) => Promise<TResult>
+function createLoader<TKeys, TBody, TResult>(
+	options: EndpointWithBodyOptions<TKeys, TBody, TResult>,
+	method: 'POST' | 'PUT'
+): (keys: TKeys, url: string, headers: { [key: string]: string }, body: TBody) => Promise<TResult>
+function createLoader<TKeys, TBody, TResult>(
+	options: EndpointWithBodyOptions<TKeys, TBody, TResult> | EndpointGetOptions<TKeys, TResult> | EndpointDeleteOptions<TKeys, TResult>,
+	method: 'POST' | 'PUT' | 'GET' | 'DELETE'
 ) {
 	const loader =
 		options.loader ||
-		((keys, url, headers, body?): Promise<TResult> => {
+		((keys, url, headers, body): Promise<TResult> => {
 			// Execute request
 			const ajaxReponsePromise = recursiveLoader(load, url, method, headers, body);
 			const ajaxResultPromise = ajaxReponsePromise
@@ -134,8 +142,8 @@ function createLoader<TKeys, TResult>(
 }
 
 function createWithBodyEndpoint<TKeys, TBody, TResult>(
-	loader: (keys: TKeys, url: string, headers: { [key: string]: string }) => Promise<TResult>,
-	options: EndpointWithBodyOptions<TKeys, TResult>
+	loader: (keys: TKeys, url: string, headers: { [key: string]: string }, body: TBody) => Promise<TResult>,
+	options: EndpointWithBodyOptions<TKeys, TBody, TResult>
 ) {
 	const headerTemplate = options.headers || {};
 	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
@@ -174,25 +182,25 @@ function createWithBodyEndpoint<TKeys, TBody, TResult>(
 }
 
 export function createPostEndpoint<TKeys, TBody, TResult>(
-	options: EndpointWithBodyOptions<TKeys, TResult>
+	options: EndpointWithBodyOptions<TKeys, TBody, TResult>
 ): EndpointWithBodyFunction<TKeys, TBody, TResult> {
 	/** Some requests require special headers like auth tokens */
-	const loader = createLoader(options, 'POST');
-	return createWithBodyEndpoint(loader, options);
+	const loader = createLoader<TKeys, TBody, TResult>(options, 'POST');
+	return createWithBodyEndpoint<TKeys, TBody, TResult>(loader, options);
 }
 
 export function createPutEndpoint<TKeys, TBody, TResult>(
-	options: EndpointWithBodyOptions<TKeys, TResult>
+	options: EndpointWithBodyOptions<TKeys, TBody, TResult>
 ): EndpointWithBodyFunction<TKeys, TBody, TResult> {
 	/** Some requests require special headers like auth tokens */
-	const loader = createLoader(options, 'PUT');
-	return createWithBodyEndpoint(loader, options);
+	const loader = createLoader<TKeys, TBody, TResult>(options, 'PUT');
+	return createWithBodyEndpoint<TKeys, TBody, TResult>(loader, options);
 }
 
 export function createGetEndpoint<TKeys, TResult>(
 	options: EndpointGetOptions<TKeys, TResult>
 ): EndpointGetFunction<TKeys, TResult> {
-	const loader = createLoader(options, 'GET');
+	const loader = createLoader<TKeys, TResult>(options, 'GET');
 	/** Some requests require special headers like auth tokens */
 	const headerTemplate = options.headers || {};
 	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);

@@ -13,7 +13,7 @@ export function load(url: string, init?: RequestInit): Promise<Response> {
 export function recursiveLoader(
 	loadFn: typeof load,
 	url: string,
-	method: string,
+	method: 'POST' | 'PUT' | 'GET' | 'DELETE',
 	headers: { [key: string]: string },
 	body?: any
 ): Promise<Response> {
