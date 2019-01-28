@@ -194,3 +194,23 @@ describe('DELETE testing', () => {
 		expect(deleteMe).toEqual(response);
 	});
 });
+
+describe('overloading loader', () => {
+	test('should be able to replace the created loader, and call it with the correct arguments', async() => {
+		const keys = {id: '4'};
+		const url = `http://example.com/user/${keys.id}`;
+		const body = {foo: 'fooo'};
+		const defaultHeaders = {
+			'Content-Type': 'application/json'
+		};
+
+		const testEndpoint = createPostEndpoint<{id: string}, {foo: string}, {bar: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`
+		});
+		const loaderPromise = Promise.resolve();
+		testEndpoint.loader = jest.fn(() => loaderPromise);
+		await testEndpoint(keys, body);
+
+		expect((testEndpoint.loader as any).mock.calls[0]).toEqual([keys, url, defaultHeaders, body]);
+	});
+});
