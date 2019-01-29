@@ -195,8 +195,8 @@ describe('DELETE testing', () => {
 	});
 });
 
-describe('overloading loader', () => {
-	test('should be able to replace the created loader, and call it with the correct arguments', async() => {
+describe('Overloading the loader', () => {
+	test('should call the replaced loader with the correct arguments', async() => {
 		const keys = {id: '4'};
 		const url = `http://example.com/user/${keys.id}`;
 		const body = {foo: 'fooo'};
@@ -213,4 +213,24 @@ describe('overloading loader', () => {
 
 		expect((testEndpoint.loader as any).mock.calls[0]).toEqual([keys, url, defaultHeaders, body]);
 	});
+
+	test('should return custom loader results', async () => {
+		type Input = {
+			id: string
+		};
+		type Output = {
+			name: string
+		};
+		const actualData = {name: 'I am a custom loader!'};
+		
+		const userEndpoint = createGetEndpoint<Input, Output>({
+			url: (keys) => `http://example.com/user/${keys.id}`
+		});
+		userEndpoint.loader = () => Promise.resolve({name: 'I am a custom loader!'});
+		const result = await userEndpoint({ id: '4' });
+
+		expect(result).toEqual(actualData);
+	});
 });
+
+describe.skip('add form handling for post requests', () => {});
