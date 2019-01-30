@@ -159,10 +159,10 @@ userEndpoint({ id: '4' })
   .then((data) => console.log(data.name));
 ```
 
-## Converters - not implemented yet!
+## Converters - Still a work in progress!
 
-~~Converters allow to cache data transformations for cases where the backend data does not match with your frontend
-data structure requirements.~~
+Converters allow to cache data transformations for cases where the backend data does not match with your frontend
+data structure requirements.
 
 ```ts
 const userEndpoint = createGetEndpoint<{ id: string }, { firstName: string; lastName: string }>({
