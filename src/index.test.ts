@@ -1,5 +1,11 @@
 import fetchMock from 'fetch-mock';
-import { createGetEndpoint, createGetEndpointConverter } from './index';
+import {
+	createGetEndpoint,
+	createGetEndpointConverter,
+	createPostEndpoint,
+	createPutEndpoint,
+	createDeleteEndpoint
+} from './index';
 
 afterEach(() => {
 	fetchMock.restore();
@@ -120,4 +126,91 @@ test('should revoke the cache of converted values if the endpoint cache is clear
 	await fullNameConverter({ id: '4' });
 	await fullNameConverter({ id: '4' });
 	expect(convertionCount).toEqual(2);
+});
+
+describe('POST testing', () => {
+	test('should receive the POST body', async() => {
+		const postBody = {firstName: 'I am', lastName: 'a name!'};
+		fetchMock.post('http://example.com/user/4', () => (url: string, opts: any) => {
+			expect(opts.body).toEqual(postBody);
+			return {foo: 'bar'};
+		});
+		const postEndpoint = createPostEndpoint<{ id: string }, { firstName: string, lastName: string }, {foo: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		const user = await postEndpoint({ id: '4' }, postBody);
+	});
+
+	test('should execute the POST request, and receive response', async() => {
+		fetchMock.post('http://example.com/user/4', () => ({foo: 'bar'}));
+		const postEndpoint = createPostEndpoint<{ id: string }, { firstName: string, lastName: string }, {foo: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		const user = await postEndpoint({ id: '4' }, {firstName: 'I am', lastName: 'a name!'});
+		expect(user).toEqual({ foo: 'bar' });
+	});
+});
+
+describe('PUT testing', () => {
+	test('should receive the PUT body', async() => {
+		const putBody = {firstName: 'I am', lastName: 'a name!'};
+		fetchMock.put('http://example.com/user/4', () => (url: string, opts: any) => {
+			expect(opts.body).toEqual(putBody);
+			return {foo: 'bar'};
+		});
+		const putEndpoint = createPutEndpoint<{ id: string }, { firstName: string, lastName: string }, {foo: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		await putEndpoint({ id: '4' }, putBody);
+	});
+
+	test('should execute the PUT request, and receive response', async() => {
+		fetchMock.put('http://example.com/user/4', () => ({foo: 'bar'}));
+		const putEndpoint = createPutEndpoint<{ id: string }, { firstName: string, lastName: string }, {foo: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		const user = await putEndpoint({ id: '4' }, {firstName: 'I am', lastName: 'a name!'});
+		expect(user).toEqual({ foo: 'bar' });
+	});
+});
+
+describe('DELETE testing', () => {
+	// TODO: Should we cover the case when the server returns no body, and only returns a 200 OK response?
+	test.skip('should execute the DELETE request, and receive 200', async() => {
+		fetchMock.delete('http://example.com/user/4', 200);
+		const deleteEndpoint = createDeleteEndpoint<{ id: string }, {foo: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		const user = await deleteEndpoint({ id: '4' });
+	});
+
+	test('should execute the DELETE request, and receive a response', async() => {
+		const response = {deleted: true};
+		fetchMock.delete('http://example.com/user/4', response);
+		const deleteEndpoint = createDeleteEndpoint<{ id: string }, {deleted: boolean}>({
+			url: (keys) => `http://example.com/user/${keys.id}`,
+		});
+		const deleteMe = await deleteEndpoint({ id: '4' });
+		expect(deleteMe).toEqual(response);
+	});
+});
+
+describe('overloading loader', () => {
+	test('should be able to replace the created loader, and call it with the correct arguments', async() => {
+		const keys = {id: '4'};
+		const url = `http://example.com/user/${keys.id}`;
+		const body = {foo: 'fooo'};
+		const defaultHeaders = {
+			'Content-Type': 'application/json'
+		};
+
+		const testEndpoint = createPostEndpoint<{id: string}, {foo: string}, {bar: string}>({
+			url: (keys) => `http://example.com/user/${keys.id}`
+		});
+		const loaderPromise = Promise.resolve();
+		testEndpoint.loader = jest.fn(() => loaderPromise);
+		await testEndpoint(keys, body);
+
+		expect((testEndpoint.loader as any).mock.calls[0]).toEqual([keys, url, defaultHeaders, body]);
+	});
 });

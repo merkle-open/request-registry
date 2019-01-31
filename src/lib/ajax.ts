@@ -3,8 +3,8 @@ import { errorHandler } from './errorHandler';
 /**
  * The main load function
  */
-export function load(url: string, headers: { [key: string]: string }): Promise<Response> {
-	return crossBrowserFetch(url, { method: 'GET', headers });
+export function load(url: string, init?: RequestInit): Promise<Response> {
+	return crossBrowserFetch(url, init);
 }
 
 /**
@@ -13,7 +13,9 @@ export function load(url: string, headers: { [key: string]: string }): Promise<R
 export function recursiveLoader(
 	loadFn: typeof load,
 	url: string,
-	headers: { [key: string]: string }
+	method: 'POST' | 'PUT' | 'GET' | 'DELETE',
+	headers: { [key: string]: string },
+	body?: any
 ): Promise<Response> {
 	const errorHandlingAttemps: Array<string> = [];
 	/**
@@ -21,7 +23,8 @@ export function recursiveLoader(
 	 * until either the response is okay or the errhandler can't handle the error
 	 */
 	function loadWithErrorHandling(): Promise<Response> {
-		return loadFn(url, headers).then((response: Response) => {
+		// TODO: Consider strinifying the body, but then you can't send Form Data.
+		return loadFn(url, {method, headers, body}).then((response: Response) => {
 			return response.ok
 				? response
 				: errorHandler(response, errorHandlingAttemps).then(

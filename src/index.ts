@@ -1,7 +1,7 @@
 import { load, recursiveLoader } from './lib/ajax';
 export { AJAX_ERROR_EVENT_NAME, AjaxError } from './lib/errorHandler';
 
-export interface EnpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
+export interface EndpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
 	url: (keys: TKeysBind) => string;
 	headers?: { [keys: string]: (keys: TKeysBind) => string };
 	/**
@@ -16,6 +16,40 @@ export interface EnpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
 	 * A function which returns false if the cache is invalid
 	 */
 	cacheValidator?: (api: EndpointGetFunction<TKeysBind, TResult>) => boolean;
+	/**
+	 * A custom loader
+	 */
+	loader?: (keys: TKeys, url: string, headers: { [key: string]: string }) => Promise<TResult>;
+	/**
+	 * Success handler
+	 */
+	afterSuccess?: (result: TResult) => any;
+	/**
+	 * Error handler
+	 */
+	afterError?: (result: Response) => any;
+}
+
+export interface EndpointWithBodyOptions<TKeys, TBody, TResult, TKeysBind = TKeys> {
+	url: (keys: TKeysBind) => string;
+	headers?: { [keys: string]: (keys: TKeysBind) => string };
+	/**
+	 * A custom loader
+	 */
+	loader?: (keys: TKeys, url: string, headers: { [key: string]: string }, body: TBody) => Promise<TResult>;
+	/**
+	 * Success handler
+	 */
+	afterSuccess?: (result: TResult) => any;
+	/**
+	 * Error handler
+	 */
+	afterError?: (result: Response) => any;
+}
+
+export interface EndpointDeleteOptions<TKeys, TResult, TKeysBind = TKeys> {
+	url: (keys: TKeysBind) => string;
+	headers?: { [keys: string]: (keys: TKeysBind) => string };
 	/**
 	 * A custom loader
 	 */
@@ -51,6 +85,22 @@ export interface EndpointGetFunction<TKeys, TResult> {
 	cacheCreation: Date | undefined;
 }
 
+export interface EndpointWithBodyFunction<TKeys, TBody, TResult> {
+	(keys: TKeys, body: TBody): Promise<TResult>;
+	/**
+	 * The loader without caching
+	 */
+	loader: (keys: TKeys, url: string, headers: { [key: string]: string }, body: TBody) => Promise<TResult>;
+}
+
+export interface EndpointDeleteFunction<TKeys, TResult> {
+	(keys: TKeys): Promise<TResult>;
+	/**
+	 * The loader without caching
+	 */
+	loader: (keys: TKeys, url: string, headers: { [key: string]: string }) => Promise<TResult>;
+}
+
 export type Cachable<T = string> = { cacheKey: string; value: T };
 
 interface Cache<TResult> {
@@ -60,19 +110,23 @@ interface Cache<TResult> {
 	clear(): void;
 }
 
-export function createGetEndpoint<TKeys, TResult>(
-	options: EnpointGetOptions<TKeys, TResult>
-): EndpointGetFunction<TKeys, TResult> {
-	/** Some requests require special headers like auth tokens */
-	const headerTemplate = options.headers || {};
-	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
-	const cache: Cache<TResult> = options.cache || new Map<string, Promise<TResult>>();
-	/** Clears all cached requests */
+function createLoader<TKeys, TResult>(
+	options: EndpointGetOptions<TKeys, TResult> | EndpointDeleteOptions<TKeys, TResult>,
+	method: 'GET' | 'DELETE'
+): (keys: TKeys, url: string, headers: { [key: string]: string }) => Promise<TResult>
+function createLoader<TKeys, TBody, TResult>(
+	options: EndpointWithBodyOptions<TKeys, TBody, TResult>,
+	method: 'POST' | 'PUT'
+): (keys: TKeys, url: string, headers: { [key: string]: string }, body: TBody) => Promise<TResult>
+function createLoader<TKeys, TBody, TResult>(
+	options: EndpointWithBodyOptions<TKeys, TBody, TResult> | EndpointGetOptions<TKeys, TResult> | EndpointDeleteOptions<TKeys, TResult>,
+	method: 'POST' | 'PUT' | 'GET' | 'DELETE'
+) {
 	const loader =
 		options.loader ||
-		((keys, url, headers): Promise<TResult> => {
+		((keys, url, headers, body): Promise<TResult> => {
 			// Execute request
-			const ajaxReponsePromise = recursiveLoader(load, url, headers);
+			const ajaxReponsePromise = recursiveLoader(load, url, method, headers, body);
 			const ajaxResultPromise = ajaxReponsePromise
 				.then((response) => {
 					if (!response.ok) {
@@ -84,6 +138,75 @@ export function createGetEndpoint<TKeys, TResult>(
 
 			return ajaxResultPromise;
 		});
+	return loader;
+}
+
+function createWithBodyEndpoint<TKeys, TBody, TResult>(
+	loader: (keys: TKeys, url: string, headers: { [key: string]: string }, body: TBody) => Promise<TResult>,
+	options: EndpointWithBodyOptions<TKeys, TBody, TResult>
+) {
+	const headerTemplate = options.headers || {};
+	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
+	
+	/**
+	 * Data loader
+	 */
+	const api: EndpointWithBodyFunction<TKeys, TBody, TResult> = Object.assign(
+		function transmitFunction(keys: TKeys, body: TBody) {
+			const url = getUrl(keys, options.url);
+			const headers = getHeaders(keys, headerTemplate, headerKeys);
+			// Set default Content-Type header,
+			// otherwise overwrite it with the one passed in by the config
+			headers.value = {
+				'Content-Type': 'application/json',
+				...headers.value
+			}
+			// Execute request
+			const ajaxResultPromise = api.loader(keys, url.value, headers.value, body);
+			// Fire handlers
+			ajaxResultPromise.then(
+				(ajaxResult) => {
+					options.afterSuccess && options.afterSuccess(ajaxResult);
+				},
+				(error) => {
+					options.afterError && options.afterError(error);
+				}
+			);
+			return ajaxResultPromise;
+		},
+		{
+			loader
+		}
+	);
+	return api;
+}
+
+export function createPostEndpoint<TKeys, TBody, TResult>(
+	options: EndpointWithBodyOptions<TKeys, TBody, TResult>
+): EndpointWithBodyFunction<TKeys, TBody, TResult> {
+	/** Some requests require special headers like auth tokens */
+	const loader = createLoader<TKeys, TBody, TResult>(options, 'POST');
+	return createWithBodyEndpoint<TKeys, TBody, TResult>(loader, options);
+}
+
+export function createPutEndpoint<TKeys, TBody, TResult>(
+	options: EndpointWithBodyOptions<TKeys, TBody, TResult>
+): EndpointWithBodyFunction<TKeys, TBody, TResult> {
+	/** Some requests require special headers like auth tokens */
+	const loader = createLoader<TKeys, TBody, TResult>(options, 'PUT');
+	return createWithBodyEndpoint<TKeys, TBody, TResult>(loader, options);
+}
+
+export function createGetEndpoint<TKeys, TResult>(
+	options: EndpointGetOptions<TKeys, TResult>
+): EndpointGetFunction<TKeys, TResult> {
+	const loader = createLoader<TKeys, TResult>(options, 'GET');
+	/** Some requests require special headers like auth tokens */
+	const headerTemplate = options.headers || {};
+	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
+	const cache: Cache<TResult> = options.cache || new Map<string, Promise<TResult>>();
+	/** Clears all cached requests */
+	
 	/**
 	 * Data loader
 	 */
@@ -131,6 +254,42 @@ export function createGetEndpoint<TKeys, TResult>(
 			cacheCreation: undefined,
 			getCacheKey: (keys: TKeys) =>
 				getCacheKey(getUrl(keys, options.url), getHeaders(keys, headerTemplate, headerKeys)),
+		}
+	);
+	return api;
+}
+
+export function createDeleteEndpoint<TKeys, TResult>(
+	options: EndpointDeleteOptions<TKeys, TResult>
+): EndpointDeleteFunction<TKeys, TResult> {
+	const loader = createLoader(options, 'DELETE');
+	/** Some requests require special headers like auth tokens */
+	const headerTemplate = options.headers || {};
+	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(headerTemplate);
+	
+	/**
+	 * Data loader
+	 */
+	const api: EndpointDeleteFunction<TKeys, TResult> = Object.assign(
+		function transmitFunction(keys: TKeys) {
+			const url = getUrl(keys, options.url);
+			const headers = getHeaders(keys, headerTemplate, headerKeys);
+			// Execute request
+			const ajaxResultPromise = api.loader(keys, url.value, headers.value);
+			
+			// Fire handlers
+			ajaxResultPromise.then(
+				(ajaxResult) => {
+					options.afterSuccess && options.afterSuccess(ajaxResult);
+				},
+				(error) => {
+					options.afterError && options.afterError(error);
+				}
+			);
+			return ajaxResultPromise;
+		},
+		{
+			loader
 		}
 	);
 	return api;
