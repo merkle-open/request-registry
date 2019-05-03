@@ -1,43 +1,40 @@
 {
   "name": "request-registry",
-  "version": "1.0.0",
-  "main": "./dist/bundle.es5.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "scripts": {
-    "commit": "git-cz",
-    "prettier": "prettier --config .prettier.js --write \"src/**/*.ts\"",
-    "size": "npx size-limit",
-    "release": "standard-version",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "clean": "rimraf ./dist",
-    "compile:main": "tsc --module amd --outFile ./dist/request-registry.es5.js",
-    "compile:module": "tsc",
-    "build": "npm run clean && run-p compile:**"
-  },
-  "author": "",
+  "version": "0.1.0",
   "license": "MIT",
   "description": "Type safe promise based HTTP request registry for the browser",
-  "dependencies": {
-    "@types/node": "8.10.36",
-    "fetch-mock": "7.2.2",
-    "fetch-ponyfill": "6.0.2"
+  "author": "Jan Nicklas",
+  "main": "dist/index.js",
+  "umd:main": "dist/request-registry.umd.production.js",
+  "module": "dist/request-registry.es.production.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "start": "tsdx watch",
+    "commit": "git-cz",
+    "build": "tsdx build",
+    "prettier": "prettier --write \"**/*.*(js|jsx|ts|tsx|json)\"",
+    "test": "tsdx test",
+    "size": "npx size-limit",
+    "release": "standard-version"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
   },
   "devDependencies": {
-    "@namics/prettier-config": "0.2.0",
-    "@types/fetch-mock": "6.0.4",
-    "@types/jest": "23.3.8",
+    "@types/jest": "24.0.12",
+    "husky": "2.2.0",
+    "prettier": "1.17.0",
+    "pretty-quick": "1.10.0",
+    "standard-version": "5.0.2",
+    "tsdx": "0.5.5",
+    "typescript": "3.4.5",
     "commitizen": "3.0.4",
-    "cz-conventional-changelog": "2.1.0",
-    "jest": "23.6.0",
-    "npm-run-all": "^4.1.5",
-    "prettier": "1.14.3",
-    "rimraf": "^2.6.3",
-    "standard-version": "4.4.0",
-    "ts-jest": "23.10.4",
-    "typescript": "^3.1.3",
-    "xhr-mock": "2.4.1"
+    "cz-conventional-changelog": "2.1.0"
   },
   "config": {
     "commitizen": {
@@ -46,11 +43,8 @@
   },
   "size-limit": [
     {
-      "path": "src/index.js",
-      "limit": "1.5 KB",
-      "ignore": [
-        "fetch-ponyfill"
-      ]
+      "path": "dist/request-registry.cjs.production.js",
+      "limit": "1.5 KB"
     }
   ]
 }

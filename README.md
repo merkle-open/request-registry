@@ -8,95 +8,92 @@ RequestRegistry works with vanilla javascript.
 The optional build in typescript support will allow you to keep your data flow very maintainable.
 
 ```ts
-import { createGetEndpoint } from 'request-registry';
+import { createGetEndpoint } from "request-registry";
 
 // The values needed to request the data
 type Input = {
-  id: string
+  id: string;
 };
 // The format the backend will provide
 type Output = {
-  firstName: string, 
-  lastName: string
+  firstName: string;
+  lastName: string;
 };
 const userEndpoint = createGetEndpoint<Input, Output>({
-  url: (keys) => `http://example.com/user/${keys.id}`
-})
+  url: keys => `http://example.com/user/${keys.id}`
+});
 
-userEndpoint({ id: '4' })
-  .then((data) => console.log(data.firstName))
+userEndpoint({ id: "4" }).then(data => console.log(data.firstName));
 ```
 
 All CRUD operations are supported, for example a POST request would look like this:
+
 ```ts
-import { createPostEndpoint } from 'request-registry';
+import { createPostEndpoint } from "request-registry";
 
 // The values needed to request the data
 type Input = {
-  id: string
+  id: string;
 };
 type Body = {
-  firstName: string,
-  lastName: string,
-  address: string
-}
+  firstName: string;
+  lastName: string;
+  address: string;
+};
 // The format the backend will provide
 type Output = {
-  userId: string,
+  userId: string;
 };
 const userEndpoint = createPostEndpoint<Input, Body, Output>({
-  url: (keys) => `http://example.com/user/${keys.id}`
-})
+  url: keys => `http://example.com/user/${keys.id}`
+});
 
-userEndpoint({ id: '4' })
-  .then((data) => console.log(data.firstName))
+userEndpoint({ id: "4" }).then(data => console.log(data.firstName));
 ```
 
 A PUT request would look similair:
 
 ```ts
-import { createPutEndpoint } from 'request-registry';
+import { createPutEndpoint } from "request-registry";
 
 // The values needed to request the data
 type Input = {
-  id: string
+  id: string;
 };
 type Body = {
-  firstName: string,
-  lastName: string,
-  address: string
-}
+  firstName: string;
+  lastName: string;
+  address: string;
+};
 // The format the backend will provide
 type Output = {
-  userId: string,
+  userId: string;
 };
 const userEndpoint = createPutEndpoint<Input, Body, Output>({
-  url: (keys) => `http://example.com/user/${keys.id}`
-})
+  url: keys => `http://example.com/user/${keys.id}`
+});
 
-userEndpoint({ id: '4' })
-  .then((data) => console.log(data.userId))
+userEndpoint({ id: "4" }).then(data => console.log(data.userId));
 ```
 
 And a DELETE request would not need a body type, just like the GET request:
 
 ```ts
-import { createDeleteRequest } from 'request-registry';
+import { createDeleteRequest } from "request-registry";
 
 // The values needed to request the data
 type Input = {
-  id: string
+  id: string;
 };
 // The format the backend will provide
 type Output = {
-  userId: string,
+  userId: string;
 };
 const userEndpoint = createPutEndpoint<Input, Output>({
-  url: (keys) => `http://example.com/user/${keys.id}`
-})
+  url: keys => `http://example.com/user/${keys.id}`
+});
 
-userEndpoint({ id: '4' })
-  .then((data) => console.log(data.userId))
+userEndpoint({ id: "4" }).then(data => console.log(data.userId));
 ```
 
 ## Caching
@@ -121,21 +118,21 @@ userLoader.clearCache()
 
 ```ts
 const userLoader = createGetEndpoint({
-  url: (keys) => `http://example.com/user/${keys.id}`,
+  url: keys => `http://example.com/user/${keys.id}`,
   cacheRequest: false
-})
+});
 ```
 
 ## Custom Caches
 
-RequestRegistry can optionaly be provided a custom Map instance to use as its memoization cache. More specifically, any object that implements the methods `get()`, `set()`, `delete()` and `clear()` can be provided. This allows for custom Maps which implement various cache algorithms to be provided. By default, the standard `Map` is used which simply grows until the Endpoint is released. 
+RequestRegistry can optionaly be provided a custom Map instance to use as its memoization cache. More specifically, any object that implements the methods `get()`, `set()`, `delete()` and `clear()` can be provided. This allows for custom Maps which implement various cache algorithms to be provided. By default, the standard `Map` is used which simply grows until the Endpoint is released.
 
 ```ts
 const customCache = new Map();
 const userLoader = createGetEndpoint({
-  url: (keys) => `http://example.com/user/${keys.id}`,
+  url: keys => `http://example.com/user/${keys.id}`,
   cache: customCache
-})
+});
 ```
 
 ## Custom Loaders
@@ -145,18 +142,17 @@ You might want to do this if you don't want to actually execute a request, but a
 
 ```ts
 type Input = {
-  id: string
+  id: string;
 };
 type Output = {
-  name: string
+  name: string;
 };
 
 const userEndpoint = createGetEndpoint<Input, Output>({
-  url: (keys) => `http://example.com/user/${keys.id}`
+  url: keys => `http://example.com/user/${keys.id}`
 });
-userEndpoint.loader = () => Promise.resolve({name: 'I am a custom loader!'});
-userEndpoint({ id: '4' })
-  .then((data) => console.log(data.name));
+userEndpoint.loader = () => Promise.resolve({ name: "I am a custom loader!" });
+userEndpoint({ id: "4" }).then(data => console.log(data.name));
 ```
 
 ## Converters - Still a work in progress!

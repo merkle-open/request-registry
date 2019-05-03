@@ -1,0 +1,36 @@
+{
+  "/Users/jnicklas/Desktop/request-registry/dist/request-registry.cjs.development.js": {
+    "bundled": 10733,
+    "minified": 3580,
+    "gzipped": 1310
+  },
+  "/Users/jnicklas/Desktop/request-registry/dist/request-registry.cjs.production.js": {
+    "bundled": 10733,
+    "minified": 3580,
+    "gzipped": 1310
+  },
+  "/Users/jnicklas/Desktop/request-registry/dist/request-registry.umd.development.js": {
+    "bundled": 11321,
+    "minified": 3171,
+    "gzipped": 1327
+  },
+  "/Users/jnicklas/Desktop/request-registry/dist/request-registry.umd.production.js": {
+    "bundled": 11321,
+    "minified": 3171,
+    "gzipped": 1327
+  },
+  "/Users/jnicklas/Desktop/request-registry/dist/request-registry.es.production.js": {
+    "bundled": 10552,
+    "minified": 3410,
+    "gzipped": 1281,
+    "treeshaked": {
+      "rollup": {
+        "code": 0,
+        "import_statements": 0
+      },
+      "webpack": {
+        "code": 1185
+      }
+    }
+  }
+}
