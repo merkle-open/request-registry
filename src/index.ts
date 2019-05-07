@@ -1,6 +1,9 @@
 import { load, recursiveLoader } from "./lib/ajax";
 import { Emitter } from "./lib/Emitter";
-export { ERROR_EMITTER, AjaxError } from "./lib/errorHandler";
+export { ERROR_EMITTER } from "./lib/errorHandler";
+
+import { AjaxError as AjaxErrorType } from "./lib/errorHandler";
+export type AjaxError = AjaxErrorType;
 
 export interface EndpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
   url: (keys: TKeysBind) => string;
@@ -109,6 +112,14 @@ export interface EndpointGetFunction<
    * will be reset on clearCache
    */
   cacheCreation: Date | undefined;
+  /**
+   * Helper to prevent memory leaks
+   *
+   * Returns a clear cache function for the given keys
+   * Once all clear cache functions for the given keys have been
+   * called the memory is freed after a default timeout of 20s
+   */
+  keepInCache: (keys: TKeys, timeout?: number) => () => void;
   /**
    * Bind to cache clear events - returns a dispose function
    */
@@ -291,6 +302,15 @@ export function createGetEndpoint<TKeys, TResult>(
   const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(
     headerTemplate
   );
+  const cacheConsumers = new Map<
+    /** CacheKey */ string,
+    {
+      /** The amount of cache consumers for the given CacheKey */
+      count: number;
+      /** The timer to cleanup the given cache once all consumers are gone */
+      timeout?: number;
+    }
+  >();
   const cache: Cache<TResult> =
     options.cache || new Map<string, Promise<TResult>>();
   const emitter = new Emitter<{
@@ -345,6 +365,34 @@ export function createGetEndpoint<TKeys, TResult>(
           cache.clear();
           emitter.emit("cacheClear", previousCacheCreation);
         }
+      },
+      /**
+       * Helper to prevent memory leaks
+       *
+       * Returns a clear cache function for the given keys
+       * Once all clear cache functions for the given keys have been
+       * called the memory is freed after a default timeout of 20s
+       */
+      keepInCache: (keys: TKeys, timeout?: number) => {
+        const cacheKey = api.getCacheKey(keys);
+        const consumer = cacheConsumers.get(cacheKey) || { count: 0 };
+        consumer.count++;
+        clearTimeout(consumer.timeout);
+        cacheConsumers.set(cacheKey, consumer);
+        let disposed = false;
+        // Return the release from cache function
+        // to allow garbage collection
+        return () => {
+          const consumer = cacheConsumers.get(cacheKey);
+          // If this is the last consumer and it has not been disposed
+          // start the cleanup timer
+          if (!disposed && consumer && --consumer.count <= 0) {
+            disposed = true;
+            consumer.timeout = setTimeout(() => {
+              cache.delete(cacheKey);
+            }, timeout || 20000) as any;
+          }
+        };
       },
       on: ((event, callback) =>
         emitter.on(event, callback)) as typeof emitter.on,
