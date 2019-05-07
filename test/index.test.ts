@@ -7,6 +7,8 @@ import {
   createDeleteEndpoint
 } from "../src";
 
+jest.useFakeTimers();
+
 afterEach(() => {
   fetchMock.restore();
 });
@@ -154,6 +156,73 @@ test("should revoke the cache of converted values if the endpoint cache is clear
   await fullNameConverter({ id: "4" });
   await fullNameConverter({ id: "4" });
   expect(convertionCount).toEqual(2);
+});
+
+test("should allow memory cleanup", async () => {
+  let loadCounter = 0;
+  fetchMock.get("http://example.com/run/4", () => ({ run: loadCounter++ }));
+  const runCountEndpoint = createGetEndpoint<{ id: string }, { run: number }>({
+    url: keys => `http://example.com/run/${keys.id}`
+  });
+  expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
+  // Keep the mocked response
+  const cacheDisposer = runCountEndpoint.keepInCache({ id: "4" });
+  jest.runAllTimers();
+  // Verify that the value did not change as it came from cache
+  expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
+  // Clear cache
+  cacheDisposer();
+  // Skip the 20s timeout:
+  jest.runAllTimers();
+  // Verify that the value is not comming from cache
+  expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 1 });
+});
+
+test("should allow to call the cacheDisposer multiple times without error", async () => {
+  let loadCounter = 0;
+  fetchMock.get("http://example.com/run/4", () => ({ run: loadCounter++ }));
+  const runCountEndpoint = createGetEndpoint<{ id: string }, { run: number }>({
+    url: keys => `http://example.com/run/${keys.id}`
+  });
+  expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
+  // Keep the mocked response
+  const cacheDisposer = runCountEndpoint.keepInCache({ id: "4" });
+  jest.runAllTimers();
+  // Verify that the value did not change as it came from cache
+  expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
+  // Clear cache
+  cacheDisposer();
+  cacheDisposer();
+  // Skip the 20s timeout:
+  jest.runAllTimers();
+  cacheDisposer();
+  // Verify that the value is not comming from cache
+  expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 1 });
+});
+
+test("should keep the cache if a new consumer hooks in", async () => {
+  let loadCounter = 0;
+  fetchMock.get("http://example.com/run/4", () => ({ run: loadCounter++ }));
+  const runCountEndpoint = createGetEndpoint<{ id: string }, { run: number }>({
+    url: keys => `http://example.com/run/${keys.id}`
+  });
+  expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
+  // Keep the mocked response
+  const cacheDisposer1 = runCountEndpoint.keepInCache({ id: "4" });
+  jest.runAllTimers();
+  // Verify that the value did not change as it came from cache
+  expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
+  // Clear cache
+  cacheDisposer1();
+  // Create a new cache disposer
+  const cacheDisposer2 = runCountEndpoint.keepInCache({ id: "4" });
+  jest.runAllTimers();
+  // Verify that the is still comming from cache
+  expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
+  cacheDisposer2();
+  jest.runAllTimers();
+  // Verify that the value is not comming from cache
+  expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 1 });
 });
 
 describe("POST testing", () => {
