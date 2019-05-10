@@ -1,0 +1,31 @@
+{
+  "name": "request-registry-react",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "umd:main": "dist/request-registry-react.umd.production.js",
+  "module": "dist/request-registry-react.es.production.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "start": "tsdx watch",
+    "build": "tsdx build",
+    "test": "tsdx test --env=jsdom"
+  },
+  "peerDependencies": {
+    "react": ">=16",
+    "request-registry": "*"
+  },
+  "devDependencies": {
+    "@types/jest": "24.0.12",
+    "@types/react": "16.8.17",
+    "@types/react-dom": "16.8.4",
+    "react": "16.8.6",
+    "react-dom": "16.8.6",
+    "request-registry": "*",
+    "tsdx": "0.5.8",
+    "tslib": "1.9.3",
+    "typescript": "3.4.5"
+  }
+}

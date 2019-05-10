@@ -1,0 +1,42 @@
+{
+  "name": "request-registry",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Type safe promise based HTTP request registry for the browser",
+  "author": "Jan Nicklas",
+  "main": "dist/index.js",
+  "umd:main": "dist/request-registry.umd.production.js",
+  "module": "dist/request-registry.es.production.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "start": "tsdx watch",
+    "commit": "git-cz",
+    "build": "tsdx build",
+    "prettier": "prettier --write \"**/*.*(js|jsx|ts|tsx|json)\"",
+    "test": "tsdx test",
+    "size": "npx size-limit",
+    "release": "standard-version"
+  },
+  "devDependencies": {
+    "@types/fetch-mock": "7.2.3",
+    "@types/jest": "24.0.12",
+    "fetch-mock": "7.3.3",
+    "node-fetch": "2.5.0",
+    "tsdx": "0.5.8",
+    "typescript": "3.4.5"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "size-limit": [
+    {
+      "path": "dist/request-registry.cjs.production.js",
+      "limit": "1.5 KB"
+    }
+  ]
+}

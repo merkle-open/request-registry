@@ -1,17 +1,17 @@
 //
 // This is a bridge to allow react components to use request-registry
 //
-import { EndpointGetFunction } from ".";
+import { EndpointGetFunction } from "request-registry";
 import { useEffect, useRef, useState } from "react";
 
 type EndpointKeys<
   TEndpointGetFunction
-> = TEndpointGetFunction extends EndpointGetFunction<infer TKeys, infer TResult>
+> = TEndpointGetFunction extends EndpointGetFunction<infer TKeys, any>
   ? TKeys
   : never;
 type EndpointResult<
   TEndpointGetFunction
-> = TEndpointGetFunction extends EndpointGetFunction<infer TKeys, infer TResult>
+> = TEndpointGetFunction extends EndpointGetFunction<any, infer TResult>
   ? TResult
   : never;
 

@@ -1,25 +1,17 @@
 {
-  "name": "request-registry",
-  "version": "0.1.0",
-  "license": "MIT",
-  "description": "Type safe promise based HTTP request registry for the browser",
-  "author": "Jan Nicklas",
-  "main": "dist/index.js",
-  "umd:main": "dist/request-registry.umd.production.js",
-  "module": "dist/request-registry.es.production.js",
-  "typings": "dist/index.d.ts",
-  "files": [
-    "dist"
-  ],
+  "name": "request-registry-repository",
+  "version": "1.0.0",
+  "description": "RequestRegistry is a generic utility (~1.5kb gziped) to be used as part of your frontend data fetching layer to provide a typed, simplified and consistent API over various remote web services via caching.",
   "scripts": {
-    "start": "tsdx watch",
+    "postinstall": "lerna bootstrap --hoist --no-ci",
     "commit": "git-cz",
-    "build": "tsdx build",
+    "build": "lerna exec --concurrency 1 -- npm run build",
     "prettier": "prettier --write \"**/*.*(js|jsx|ts|tsx|json)\"",
-    "test": "tsdx test",
-    "size": "npx size-limit",
-    "release": "standard-version"
+    "test": "lerna run test",
+    "size": "lerna run size"
   },
+  "author": "Jan Nicklas",
+  "license": "MIT",
   "husky": {
     "hooks": {
       "pre-commit": "pretty-quick --staged"
@@ -30,12 +22,12 @@
     "@types/jest": "24.0.12",
     "commitizen": "3.0.4",
     "cz-conventional-changelog": "2.1.0",
+    "lerna": "^3.13.4",
     "fetch-mock": "7.3.3",
     "husky": "2.2.0",
     "node-fetch": "2.5.0",
     "prettier": "1.17.0",
     "pretty-quick": "1.10.0",
-    "standard-version": "5.0.2",
     "tsdx": "0.5.5",
     "typescript": "3.4.5"
   },
@@ -43,11 +35,5 @@
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
-  },
-  "size-limit": [
-    {
-      "path": "dist/request-registry.cjs.production.js",
-      "limit": "1.5 KB"
-    }
-  ]
+  }
 }
