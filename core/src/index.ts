@@ -117,9 +117,9 @@ export interface EndpointGetFunction<
    *
    * Returns a clear cache function for the given keys
    * Once all clear cache functions for the given keys have been
-   * called the memory is freed after a default timeout of 20s
+   * called the memory is freed after a timeout of 20s
    */
-  keepInCache: (keys: TKeys, timeout?: number) => () => void;
+  keepInCache: (keys: TKeys) => () => void;
   /**
    * Bind to cache clear events - returns a dispose function
    */
@@ -367,11 +367,11 @@ export function createGetEndpoint<TKeys, TResult>(
         }
       },
       /**
-       * Helper to prevent memory leaks
+       * Helper to prevent memory leaks for cached components
        *
        * Returns a clear cache function for the given keys
        * Once all clear cache functions for the given keys have been
-       * called the memory is freed after a default timeout of 20s
+       * called the memory is freed after a timeout of 20s
        */
       keepInCache: (keys: TKeys, timeout?: number) => {
         const cacheKey = api.getCacheKey(keys);
