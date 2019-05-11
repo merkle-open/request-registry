@@ -46,11 +46,7 @@ export function createEndpointMock<
 >(endpoint: TEndpoint, mockResponse: TMock, delay?: number) {
   return {
     activate: () =>
-      mockEndpoint<TKeys, TResult, TEndpoint, TMock>(
-        endpoint,
-        mockResponse,
-        delay
-      ),
+      mockEndpoint<TEndpoint, TMock>(endpoint, mockResponse, delay),
     clear: () => unmockEndpoint(endpoint),
   };
 }
@@ -74,11 +70,12 @@ export function activateMocks(endpointMocks: Array<{ activate: () => void }>) {
  * Activate a mock for a given endpoint
  * This mock will be executed whenever the endpoint is loaded
  */
-function mockEndpoint<
-  TKeys extends {},
-  TResult extends unknown,
-  TEndpoint extends EndpointGetFunction<TKeys, TResult>,
-  TMock extends (keys: TKeys, url: string) => Promise<TResult>
+export function mockEndpoint<
+  TEndpoint extends EndpointGetFunction<any, any>,
+  TMock extends (
+    keys: EndpointKeys<TEndpoint>,
+    url: string
+  ) => Promise<EndpointResult<TEndpoint>>
 >(endpoint: TEndpoint, mockResponse: TMock, delay?: number) {
   if (!originalLoaders.has(endpoint)) {
     originalLoaders.set(endpoint, endpoint.loader);
@@ -116,6 +113,30 @@ function unmockEndpoint(endpoint: EndpointGetFunction<any, any>) {
   endpoint.loader = loader;
   activeMocks.delete(endpoint);
   originalLoaders.delete(endpoint);
+}
+
+/**
+ * Activate a mock for a given endpoint for one request
+ */
+export function mockEndpointOnce<
+  TEndpoint extends EndpointGetFunction<any, any>,
+  TMock extends (
+    keys: EndpointKeys<TEndpoint>,
+    url: string
+  ) => Promise<EndpointResult<TEndpoint>>
+>(endpoint: TEndpoint, mockResponse: TMock, delay?: number) {
+  let endointDisposer: () => void;
+  const mockFunction = ((...args: any) => {
+    if (endointDisposer) {
+      endointDisposer();
+    }
+    return mockResponse.apply(null, args);
+  }) as TMock;
+  return (endointDisposer = mockEndpoint<TEndpoint, TMock>(
+    endpoint,
+    mockFunction,
+    delay
+  ));
 }
 
 /**
