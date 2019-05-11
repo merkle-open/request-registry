@@ -11,6 +11,9 @@ import {
   action,
 } from 'mobx';
 
+/* istanbul ignore next */
+const noop = () => {};
+
 type EndpointKeys<
   TEndpointGetFunction
 > = TEndpointGetFunction extends EndpointGetFunction<infer TKeys, any>
@@ -23,9 +26,9 @@ type EndpointResult<
   : never;
 
 type EndpointState<TResult> =
-  | { ready: false; value: undefined; state: 'loading' }
-  | { ready: false; value: TResult; state: 'updating' }
-  | { ready: true; value: TResult; state: 'load' };
+  | { busy: true; value: undefined; state: 'loading' }
+  | { busy: true; value: TResult; state: 'updating' }
+  | { busy: false; value: TResult; state: 'load' };
 
 export function createObservableEndpoint<
   TKeys extends EndpointKeys<TEndpoint>,
@@ -36,9 +39,9 @@ export function createObservableEndpoint<
   return Object.create(
     { setKeys: (keys: TKeys) => mobxEndpoint.setKeys(keys) },
     {
-      value: { get: () => mobxEndpoint.value.value, set: () => {} },
-      ready: { get: () => mobxEndpoint.value.ready, set: () => {} },
-      state: { get: () => mobxEndpoint.value.state, set: () => {} },
+      value: { get: () => mobxEndpoint.value.value, set: noop },
+      busy: { get: () => mobxEndpoint.value.busy, set: noop },
+      state: { get: () => mobxEndpoint.value.state, set: noop },
     }
   ) as { setKeys: (keys: TKeys) => void } & EndpointState<TResult>;
 }
@@ -53,7 +56,8 @@ class MobxEndpoint<
   disposables = [] as Array<() => any>;
   _cacheKey?: string;
   _value?: TResult;
-  ready: boolean = false;
+  _endpointPromise?: Promise<any>;
+  busy: boolean = false;
 
   constructor(endpoint: TEndpoint, keys?: TKeys) {
     this.keys = keys;
@@ -82,13 +86,8 @@ class MobxEndpoint<
         if (this.keys === undefined) {
           return;
         }
-        this.ready = false;
-        this.endpoint(this.keys).then(result => {
-          // If the keys are not up to date anymore ignore the result
-          if (this._cacheKey === this.endpoint.getCacheKey(this.keys)) {
-            this.receiveData(result);
-          }
-        });
+        this.busy = true;
+        this.executeEndpoint();
       })
     );
   }
@@ -101,7 +100,7 @@ class MobxEndpoint<
   /** Handle ajax response */
   receiveData(result: TResult) {
     this._value = result as TResult;
-    this.ready = true;
+    this.busy = false;
   }
 
   get value(): EndpointState<TResult> {
@@ -111,47 +110,56 @@ class MobxEndpoint<
       : undefined;
     if (currentCacheKey && this._cacheKey !== currentCacheKey) {
       this._cacheKey = currentCacheKey;
-      if (this._value !== undefined) {
-        this._value = undefined;
-      }
+      this.busy = true;
       this.dispose();
       this.watchEndpoint();
-      this.endpoint(this.keys).then(result => {
-        // If the keys are not up to date anymore ignore the result
-        if (this._cacheKey === currentCacheKey) {
-          this.receiveData(result);
-        }
-      });
+      this.executeEndpoint();
     }
     // Return value from cache
-    const ready = this.ready;
+    const busy = this.busy;
     const value = this._value;
-    if (ready && value) {
+    // If the endpoint is fully load
+    // and no update is in progress
+    if (!busy && value) {
       return {
         state: 'load',
         value,
-        ready,
+        busy: false,
       };
     }
-    if (!ready && value) {
+    // If the endpoint is fully load
+    // but an update is in progress
+    if (busy && value) {
       return {
         state: 'updating',
         value,
-        ready,
+        busy: true,
       };
     }
+    // If the endpoint was never load
     return {
       state: 'loading',
-      ready: false,
+      busy: true,
       value: undefined,
     };
+  }
+
+  executeEndpoint() {
+    const currentPromise = (this._endpointPromise = this.endpoint(
+      this.keys
+    ).then(result => {
+      // If the keys are not up to date anymore ignore the result
+      if (currentPromise === this._endpointPromise) {
+        this.receiveData(result);
+      }
+    }));
   }
 }
 
 decorate(MobxEndpoint, {
   receiveData: action,
   keys: observable,
-  ready: observable,
+  busy: observable,
   _value: observable,
   setKeys: action,
   value: computed,

@@ -5,3 +5,5 @@ node_modules
 .rts2_cache_es
 .rts2_cache_umd
 dist
+coverage
+jest.config.js
