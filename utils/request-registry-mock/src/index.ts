@@ -13,17 +13,31 @@ type EndpointResult<
   ? TResult
   : never;
 
+type LoaderFunction = ((
+  keys: any,
+  url: string,
+  headers: { [key: string]: string }
+) => Promise<any>) & {
+  baseMock?: (
+    keys: any,
+    url: string,
+    headers: { [key: string]: string }
+  ) => Promise<any>;
+};
+
 /**
  * Helper to store all original loader functions to revert back to the original
  */
 const originalLoaders = new WeakMap<
   EndpointGetFunction<any, any>,
-  (keys: any, url: string, headers: { [key: string]: string }) => Promise<any>
+  LoaderFunction[]
 >();
 /**
  * Set of all currently active mocks
  */
 const activeMocks = new Set<EndpointGetFunction<any, any>>();
+
+const baseMocks = new WeakMap<LoaderFunction, LoaderFunction>();
 
 /**
  * Create a mock controller which allows to easily activate or deactivate this mock version
@@ -34,7 +48,7 @@ const activeMocks = new Set<EndpointGetFunction<any, any>>();
  *    // Activate mock:
  *    userJoeMock.activate();
  *    // Deactivate mock:
- *    userJoeMock.deactivate();
+ *    userJoeMock.clear();
  * ```
  *
  */
@@ -47,23 +61,26 @@ export function createEndpointMock<
   return {
     activate: () =>
       mockEndpoint<TEndpoint, TMock>(endpoint, mockResponse, delay),
-    clear: () => unmockEndpoint(endpoint),
+    clear: () => unmockEndpoint(endpoint, mockResponse),
   };
 }
 
 /**
- * Activate only the given mocks
+ * Activate multiple mocks at once
  * Usage:
  *
  * ```
  *    const userJoeMock = createMockEndpoint(getUserName, async () => ({name: 'Joe'}));
  *    const userAgeMock = createMockEndpoint(getAgeName, async () => ({age: 99}));
- *    activateMocks([userJoeMock, userAgeMock])
+ *    activateMocks(userJoeMock, userAgeMock)
  * ```
- *
  */
-export function activateMocks(endpointMocks: Array<{ activate: () => void }>) {
-  endpointMocks.forEach(endpointMocks => endpointMocks.activate());
+export function activateMocks(
+  ...endpointMocks: Array<{ activate: () => void }>
+) {
+  endpointMocks.forEach(endpointMocks => {
+    endpointMocks.activate();
+  });
 }
 
 /**
@@ -77,8 +94,13 @@ export function mockEndpoint<
     url: string
   ) => Promise<EndpointResult<TEndpoint>>
 >(endpoint: TEndpoint, mockResponse: TMock, delay?: number) {
-  if (!originalLoaders.has(endpoint)) {
-    originalLoaders.set(endpoint, endpoint.loader);
+  // Remember the previous loader
+  const originalLoadersOfEndpoint = originalLoaders.get(endpoint) || [];
+  originalLoadersOfEndpoint.push(endpoint.loader);
+  activeMocks.add(endpoint);
+  // If the array is new add it to the map
+  if (originalLoadersOfEndpoint.length === 1) {
+    originalLoaders.set(endpoint, originalLoadersOfEndpoint);
   }
   endpoint.loader = function(_keys, url) {
     const args = arguments;
@@ -86,33 +108,68 @@ export function mockEndpoint<
       () => mockResponse.apply(this, args as any)
     );
     // For nodejs skip the fake request
+    /* istanbul ignore else */
     if (typeof fetch === 'undefined') {
       return mockResult;
+    } else {
+      // For the browser
+      // create a fake request in network panel
+      return mockResult
+        .then(_fakeResponse =>
+          fetch(`data:;url=${(url = url.replace(/[,;]/g, ''))},`)
+        )
+        .then(_responseText => {
+          return mockResult;
+        });
     }
-    // Create fake request in network panel
-    return mockResult
-      .then(_fakeResponse =>
-        fetch(`data:;url=${(url = url.replace(/[,;]/g, ''))},`)
-      )
-      .then(_responseText => {
-        return mockResult;
-      });
   };
-  activeMocks.add(endpoint);
-  return unmockEndpoint.bind(null, endpoint);
+  // Add the original mockFunction to find it during cleanup
+  baseMocks.set(endpoint.loader, mockResponse);
+  // Return the dispose function
+  return unmockEndpoint.bind(null, endpoint, endpoint.loader);
+}
+
+function getBaseMock(loaderFunction: LoaderFunction) {
+  return baseMocks.get(loaderFunction);
 }
 
 /**
  * Reverts back to the original endpoint behaviour
  */
-function unmockEndpoint(endpoint: EndpointGetFunction<any, any>) {
-  const loader = originalLoaders.get(endpoint);
-  if (!loader) {
-    return;
+function unmockEndpoint(
+  endpoint: EndpointGetFunction<any, any>,
+  loaderFunction?: LoaderFunction
+) {
+  const originalLoadersOfEndpoint = originalLoaders.get(endpoint) || [];
+  if (getBaseMock(endpoint.loader) === loaderFunction) {
+    // If this endpoint is active remove it and activate the next in queue
+    const previousLoader = originalLoadersOfEndpoint.pop();
+    /* istanbul ignore else */
+    if (previousLoader) {
+      endpoint.loader = previousLoader;
+    }
+  } else if (loaderFunction === undefined) {
+    // If no loaderFunction was given Erase all loaders
+    const originalLoader = originalLoadersOfEndpoint.splice(0)[0];
+    /* istanbul ignore else */
+    if (originalLoader) {
+      endpoint.loader = originalLoader;
+    }
+  } else {
+    // If the loaderFunction is not active remove it from the mock queue
+    const index = originalLoadersOfEndpoint.findIndex(
+      queuedLoader => getBaseMock(queuedLoader) === loaderFunction
+    );
+    /* istanbul ignore else */
+    if (index !== -1) {
+      originalLoadersOfEndpoint.splice(index, 1);
+    }
   }
-  endpoint.loader = loader;
-  activeMocks.delete(endpoint);
-  originalLoaders.delete(endpoint);
+  // If there are no more loaders in the que clean up
+  if (originalLoadersOfEndpoint.length === 0) {
+    activeMocks.delete(endpoint);
+    originalLoaders.delete(endpoint);
+  }
 }
 
 /**
@@ -125,23 +182,23 @@ export function mockEndpointOnce<
     url: string
   ) => Promise<EndpointResult<TEndpoint>>
 >(endpoint: TEndpoint, mockResponse: TMock, delay?: number) {
-  let endointDisposer: () => void;
-  const mockFunction = ((...args: any) => {
-    if (endointDisposer) {
-      endointDisposer();
-    }
-    return mockResponse.apply(null, args);
-  }) as TMock;
-  return (endointDisposer = mockEndpoint<TEndpoint, TMock>(
+  const disposer = mockEndpoint<TEndpoint, TMock>(
     endpoint,
-    mockFunction,
+    function(...args: any) {
+      unmockEndpoint(endpoint, mockResponse);
+      return mockResponse.apply(null, args);
+    } as TMock,
     delay
-  ));
+  );
+  baseMocks.set(endpoint.loader, mockResponse);
+  return disposer;
 }
 
 /**
  * unmock all active endpoints
  */
 export function unmockAllEndpoints() {
-  activeMocks.forEach(mockedEndpoint => unmockEndpoint(mockedEndpoint));
+  activeMocks.forEach(mockedEndpoint => {
+    unmockEndpoint(mockedEndpoint);
+  });
 }
