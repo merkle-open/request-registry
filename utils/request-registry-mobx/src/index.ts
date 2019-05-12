@@ -30,20 +30,36 @@ type EndpointState<TResult> =
   | { busy: true; value: TResult; state: 'updating' }
   | { busy: false; value: TResult; state: 'load' };
 
-export function createObservableEndpoint<
-  TKeys extends EndpointKeys<TEndpoint>,
-  TResult extends EndpointResult<TEndpoint>,
+export type ObservableEndpoint<
   TEndpoint extends EndpointGetFunction<any, any>
->(endpoint: TEndpoint, keys?: TKeys) {
+> = {
+  setKeys: (keys: EndpointKeys<TEndpoint>) => void;
+} & EndpointState<EndpointResult<TEndpoint>>;
+
+/**
+ * Create an observable Endpoint which will load data only if the endpoint is used.
+ * As long as the ObservableEndpoint is observed it will execute the endpoint again if the
+ * endpoint is invalidated.
+ */
+export function createObservableEndpoint<
+  TEndpoint extends EndpointGetFunction<any, any>
+>(endpoint: TEndpoint, keys?: EndpointKeys<TEndpoint>) {
+  type TKeys = EndpointKeys<TEndpoint>;
   const mobxEndpoint = new MobxEndpoint(endpoint, keys);
   return Object.create(
-    { setKeys: (keys: TKeys) => mobxEndpoint.setKeys(keys) },
     {
-      value: { get: () => mobxEndpoint.value.value, set: noop },
-      busy: { get: () => mobxEndpoint.value.busy, set: noop },
-      state: { get: () => mobxEndpoint.value.state, set: noop },
+      /** Allow to set new request parameters */
+      setKeys: (keys: TKeys) => mobxEndpoint.setKeys(keys),
+    },
+    {
+      /** The observable ajax response result - Will be `undefined` before the first request finished */
+      value: { get: () => mobxEndpoint.state.value, set: noop },
+      /** The observable busy state - Will be `true` while an ajax request is running */
+      busy: { get: () => mobxEndpoint.state.busy, set: noop },
+      /** The observable state - Will be `"loading" | "updating" | "load"` */
+      state: { get: () => mobxEndpoint.state.state, set: noop },
     }
-  ) as { setKeys: (keys: TKeys) => void } & EndpointState<TResult>;
+  ) as ObservableEndpoint<TEndpoint>;
 }
 
 class MobxEndpoint<
@@ -51,27 +67,39 @@ class MobxEndpoint<
   TResult extends EndpointResult<TEndpoint>,
   TEndpoint extends EndpointGetFunction<any, any>
 > {
+  /** The original request-registry endpoint reference */
   endpoint: TEndpoint;
+  /** Request parameters */
   keys?: TKeys;
+  /** Holds all cleanup functions which should be called 
+      once this class becomes unobserved */
   disposables = [] as Array<() => any>;
+  /** The cacheKey for the latest keys to execute the endpoint
+      only if the request parameters have changed */
   _cacheKey?: string;
+  /** The ajax result */
   _value?: TResult;
-  _endpointPromise?: Promise<any>;
+  /** The ajax promise */
+  _valuePromise?: Promise<any>;
+  /** Will be true as long as an ajax request is running */
   busy: boolean = false;
 
   constructor(endpoint: TEndpoint, keys?: TKeys) {
     this.keys = keys;
     this.endpoint = endpoint;
-    this.hooks();
-  }
-  hooks() {
-    onBecomeObserved(this, 'value', () => {
+    // Track the observe state of the computed this.state
+    // to manage the endpoint keepInCache state
+    // and to refresh the endpoint in case of a
+    // cache invalidation
+    onBecomeObserved(this, 'state', () => {
       this.watchEndpoint();
     });
-    onBecomeUnobserved(this, 'value', () => {
+    onBecomeUnobserved(this, 'state', () => {
       this.dispose();
     });
   }
+
+  /** Update get request parameters */
   setKeys(keys: TKeys) {
     this.keys = keys;
   }
@@ -103,7 +131,8 @@ class MobxEndpoint<
     this.busy = false;
   }
 
-  get value(): EndpointState<TResult> {
+  /** The Observable State */
+  get state(): EndpointState<TResult> {
     // Check if value has to be recalculated
     const currentCacheKey = this.keys
       ? this.endpoint.getCacheKey(this.keys)
@@ -145,14 +174,15 @@ class MobxEndpoint<
   }
 
   executeEndpoint() {
-    const currentPromise = (this._endpointPromise = this.endpoint(
-      this.keys
-    ).then(result => {
-      // If the keys are not up to date anymore ignore the result
-      if (currentPromise === this._endpointPromise) {
-        this.receiveData(result);
+    // Store the ajax promise to track if this is the latest promise
+    const currentPromise = (this._valuePromise = this.endpoint(this.keys).then(
+      result => {
+        // If the keys are not up to date anymore ignore the result
+        if (currentPromise === this._valuePromise) {
+          this.receiveData(result);
+        }
       }
-    }));
+    ));
   }
 }
 
@@ -162,5 +192,5 @@ decorate(MobxEndpoint, {
   busy: observable,
   _value: observable,
   setKeys: action,
-  value: computed,
+  state: computed,
 });
