@@ -18,18 +18,12 @@
     }
   },
   "devDependencies": {
-    "@types/fetch-mock": "7.2.3",
-    "@types/jest": "24.0.12",
     "commitizen": "3.0.4",
     "cz-conventional-changelog": "2.1.0",
     "lerna": "^3.13.4",
-    "fetch-mock": "7.3.3",
     "husky": "2.2.0",
-    "node-fetch": "2.5.0",
     "prettier": "1.17.0",
-    "pretty-quick": "1.10.0",
-    "tsdx": "0.5.5",
-    "typescript": "3.4.5"
+    "pretty-quick": "1.10.0"
   },
   "config": {
     "commitizen": {
