@@ -6,12 +6,11 @@
   "scripts": {
     "start": "parcel index.html"
   },
-  "dependencies": {
-    "react-app-polyfill": "^1.0.0"
-  },
   "alias": {
-    "react": "../node_modules/react",
-    "react-dom": "../node_modules/react-dom"
+    "request-registry": "../node_modules/request-registry",
+    "request-registry-mock": "../node_modules/request-registry-mock",
+    "react": "../../../node_modules/react",
+    "react-dom": "../../../node_modules/react-dom"
   },
   "devDependencies": {
     "@types/react": "^16.8.15",
