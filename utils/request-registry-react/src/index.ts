@@ -70,11 +70,30 @@ export function useGetEndPoint<
   }, [endpoint, ...turnObjectInDiffableArray(keys)]);
 
   return endpointResult === null
-    ? ({ state: "loading" } as const)
+    ? ({ state: "loading", promise: endpointPromise } as const)
     : ({
         state: "load",
-        data: endpointResult
+        data: endpointResult,
+        promise: endpointPromise
       } as const);
+}
+
+/**
+ * Provide a hook which works with React.Suspense
+ */
+export function useGetEndPointSuspendable<
+  TKeys extends EndpointKeys<TEndpoint>,
+  TResult extends EndpointResult<TEndpoint>,
+  TEndpoint extends EndpointGetFunction<any, any>
+>(endpoint: TEndpoint, keys: TKeys): TResult {
+  const endpointData = useGetEndPoint<TKeys, TResult, TEndpoint>(
+    endpoint,
+    keys
+  );
+  if (endpointData.state === "loading") {
+    throw endpointData.promise;
+  }
+  return endpointData.data;
 }
 
 /**
