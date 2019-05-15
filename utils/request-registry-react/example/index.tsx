@@ -1,80 +1,63 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
 import { useGetEndPoint } from "../src/";
+import { loginEndpoint, productsEndpoint, logoutEndpoint } from "./endpoints";
 import {
-  createGetEndpoint,
-  createPostEndpoint
-} from "../node_modules/request-registry";
-import { mockEndpoint } from "../node_modules/request-registry-mock";
+  loginEndpointMock,
+  productsEndpointMock,
+  logoutEndpointMock
+} from "./endpointsMocks";
 
-const productsEndpoint = createGetEndpoint<
-  { brandId: string; page: number },
-  { title: string; productId: string; price: number }
->({
-  url: ({ brandId, page }) => `/get/products/brand/${brandId}?page=${page}`
-});
+// Activate mocks as we don't have a server
+productsEndpointMock.activate();
+loginEndpointMock.activate();
+logoutEndpointMock.activate();
 
-const loginEndpoint = createPostEndpoint<
-  {},
-  { userName: string; password: string },
-  {}
->({
-  url: () => `/user/login`,
-  afterSuccess: () => {
-    productsEndpoint.clearCache();
-  }
-});
-
-let isUserLoggedIn = false;
-mockEndpoint(
-  productsEndpoint,
-  async () => ({
-    title: "Tennisball",
-    productId: "10",
-    price: isUserLoggedIn ? 8 : 10
-  }),
-  100
-);
-
-const ProductDetailView = () => {
+const ProductDetailView = (props: { brandId: string }) => {
   const productEndpointResult = useGetEndPoint(productsEndpoint, {
-    brandId: "Adidas",
-    page: 0
+    brandId: props.brandId
   });
-  if (productEndpointResult.state !== "load") {
-    return <div>Loading...</div>;
+  if (productEndpointResult.state !== "DONE") {
+    return null;
   }
-  const { title, price } = productEndpointResult.data;
+  const { description, price } = productEndpointResult.value;
   return (
-    <div>
-      {title}: {price} CHF
-    </div>
+    <React.Fragment>
+      {price} CHF
+      <br />
+      <span>{description}</span>
+    </React.Fragment>
   );
 };
 
 const ProductNameView = (props: { brandId: string }) => {
   const productEndpointResult = useGetEndPoint(productsEndpoint, {
-    brandId: props.brandId,
-    page: 0
+    brandId: props.brandId
   });
-  if (productEndpointResult.state !== "load") {
-    return null;
+  if (productEndpointResult.state !== "DONE") {
+    return <span>Loading...</span>;
   }
-  const { title, price } = productEndpointResult.data;
+  const { title } = productEndpointResult.value;
   return <span>{title}</span>;
 };
 
-const ToggleButton = () => (
-  <button
-    onClick={() => {
-      loginEndpoint({}, { userName: "Joe", password: "123456" });
-      isUserLoggedIn = !isUserLoggedIn;
-      productsEndpoint.clearCache();
-    }}
-  >
-    Toggle Login
-  </button>
-);
+const LoginButton = () => {
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  return (
+    <button
+      onClick={() => {
+        if (!isLoggedIn) {
+          loginEndpoint({}, { userName: "Joe", password: "123456" });
+        } else {
+          logoutEndpoint({}, {});
+        }
+        setIsLoggedIn(!isLoggedIn);
+      }}
+    >
+      {isLoggedIn ? "Logout" : "Login"}
+    </button>
+  );
+};
 
 const App = () => {
   const [isActive, setIsActive] = React.useState(false);
@@ -82,19 +65,31 @@ const App = () => {
     return (
       <div>
         <button onClick={() => setIsActive(true)}>Activate</button>
-        <ToggleButton />
+        <LoginButton />
       </div>
     );
   }
   return (
     <div>
       <button onClick={() => setIsActive(false)}>Deactivate</button>
-      <ToggleButton />
-      <ProductNameView brandId="Adidas" />
-      <ProductNameView brandId="Puma" />
-      <ProductDetailView />
-      <ProductDetailView />
-      <ProductDetailView />
+      <LoginButton />
+      <details>
+        <summary>
+          <ProductNameView brandId="Puma" />
+        </summary>
+        <p>
+          <ProductDetailView brandId="Puma" />
+        </p>
+      </details>
+
+      <details>
+        <summary>
+          <ProductNameView brandId="Adidas" />
+        </summary>
+        <p>
+          <ProductDetailView brandId="Adidas" />
+        </p>
+      </details>
     </div>
   );
 };

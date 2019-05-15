@@ -2,14 +2,20 @@ import {
   createEndpointMock,
   unmockAllEndpoints,
   mockEndpointOnce,
+  mockEndpoint,
   activateMocks,
 } from '../src/';
-import { createGetEndpoint } from 'request-registry';
+import {
+  createGetEndpoint,
+  createPostEndpoint,
+  createPutEndpoint,
+  createDeleteEndpoint,
+} from 'request-registry';
 
 afterAll(() => unmockAllEndpoints());
 
 describe('request-registry-mock', () => {
-  describe('createEndpointMock', () => {
+  describe('GET', () => {
     it('should create a mock without errors', () => {
       const userEndpoint = createGetEndpoint<{}, { name: string }>({
         url: () => '/user',
@@ -156,6 +162,129 @@ describe('request-registry-mock', () => {
       userEndpointMock2.clear();
       userEndpoint.clearCache();
       expect(await userEndpoint({})).toEqual({ name: 'Alex' });
+    });
+  });
+
+  describe('PUT', () => {
+    it('should return the put response', async () => {
+      const setEmailEndpoint = createPutEndpoint<
+        { userId: string },
+        { email: string },
+        { emailSet: boolean }
+      >({
+        url: ({ userId }) => `/user/${userId}`,
+      });
+      mockEndpoint(setEmailEndpoint, async () => ({ emailSet: true }));
+      const response = await setEmailEndpoint(
+        { userId: '1' },
+        { email: 'alex@host.com' }
+      );
+      expect(response).toEqual({ emailSet: true });
+    });
+    it('should forward the body to the mock function', async () => {
+      const setEmailEndpoint = createPutEndpoint<
+        { userId: string },
+        { email: string }
+      >({
+        url: ({ userId }) => `/user/${userId}`,
+      });
+      let mockArguments;
+      mockEndpoint(setEmailEndpoint, async (keys, url, header, body) => {
+        mockArguments = { keys, url, header, body };
+        return undefined;
+      });
+      await setEmailEndpoint({ userId: '1' }, { email: 'alex@host.com' });
+      expect(mockArguments).toEqual({
+        body: {
+          email: 'alex@host.com',
+        },
+        header: {
+          'Content-Type': 'application/json',
+        },
+        keys: {
+          userId: '1',
+        },
+        url: '/user/1',
+      });
+    });
+  });
+
+  describe('DELETE', () => {
+    it('should return the delete response', async () => {
+      const deleteUserEndpoint = createDeleteEndpoint<
+        { userId: string },
+        { deleted: boolean }
+      >({
+        url: ({ userId }) => `/user/delete/${userId}`,
+      });
+      mockEndpoint(deleteUserEndpoint, async () => ({ deleted: true }));
+      const response = await deleteUserEndpoint({ userId: '1' });
+      expect(response).toEqual({ deleted: true });
+    });
+    it('should forward the body to the mock function', async () => {
+      const deleteUserEndpoint = createDeleteEndpoint<
+        { userId: string },
+        { deleted: boolean }
+      >({
+        url: ({ userId }) => `/user/delete/${userId}`,
+      });
+      let mockArguments;
+      mockEndpoint(deleteUserEndpoint, async (keys, url, header) => {
+        mockArguments = { keys, url, header };
+        return { deleted: true };
+      });
+      await deleteUserEndpoint({ userId: '1' });
+      expect(mockArguments).toEqual({
+        header: {},
+        keys: {
+          userId: '1',
+        },
+        url: '/user/delete/1',
+      });
+    });
+  });
+
+  describe('POST', () => {
+    it('should return the post response', async () => {
+      const setEmailEndpoint = createPostEndpoint<
+        { userId: string },
+        { email: string },
+        { emailSet: boolean }
+      >({
+        url: ({ userId }) => `/user/${userId}`,
+      });
+      mockEndpoint(setEmailEndpoint, async () => ({ emailSet: true }));
+      const response = await setEmailEndpoint(
+        { userId: '1' },
+        { email: 'alex@host.com' }
+      );
+      expect(response).toEqual({ emailSet: true });
+    });
+    it('should forward the body to the mock function', async () => {
+      const setEmailEndpoint = createPostEndpoint<
+        { userId: string },
+        { email: string }
+      >({
+        url: ({ userId }) => `/user/${userId}`,
+      });
+      let mockArguments;
+      mockEndpoint(setEmailEndpoint, async (keys, url, header, body) => {
+        mockArguments = { keys, url, header, body };
+        return undefined;
+      });
+      await setEmailEndpoint({ userId: '1' }, { email: 'alex@host.com' });
+      expect(mockArguments).toEqual({
+        body: {
+          email: 'alex@host.com',
+        },
+        header: {
+          'Content-Type': 'application/json',
+        },
+        keys: {
+          userId: '1',
+        },
+        url: '/user/1',
+      });
     });
   });
 });

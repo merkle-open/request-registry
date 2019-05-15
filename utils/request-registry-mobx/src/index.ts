@@ -26,9 +26,10 @@ type EndpointResult<
   : never;
 
 type EndpointState<TResult> =
-  | { busy: true; value: undefined; state: 'loading' }
-  | { busy: true; value: TResult; state: 'updating' }
-  | { busy: false; value: TResult; state: 'load' };
+  | { busy: true; value: undefined; state: 'LOADING'; hasData: false }
+  | { busy: false; value: undefined; state: 'ERROR'; hasData: false }
+  | { busy: true; value: TResult; state: 'UPDATING'; hasData: true }
+  | { busy: false; value: TResult; state: 'DONE'; hasData: true };
 
 export type ObservableEndpoint<
   TEndpoint extends EndpointGetFunction<any, any>
@@ -56,8 +57,10 @@ export function createObservableEndpoint<
       value: { get: () => mobxEndpoint.state.value, set: noop },
       /** The observable busy state - Will be `true` while an ajax request is running */
       busy: { get: () => mobxEndpoint.state.busy, set: noop },
-      /** The observable state - Will be `"loading" | "updating" | "load"` */
+      /** The observable state - Will be `"LOADING" | "UPDATING" | "LOAD" | "ERROR"` */
       state: { get: () => mobxEndpoint.state.state, set: noop },
+      /** Wether the endpoint has Data` */
+      hasData: { get: () => mobxEndpoint.state.value !== undefined, set: noop },
     }
   ) as ObservableEndpoint<TEndpoint>;
 }
@@ -79,6 +82,8 @@ class MobxEndpoint<
   _cacheKey?: string;
   /** The ajax result */
   _value?: TResult;
+  /** The ajax error */
+  _error?: any;
   /** The ajax promise */
   _valuePromise?: Promise<any>;
   /** Will be true as long as an ajax request is running */
@@ -115,7 +120,7 @@ class MobxEndpoint<
           return;
         }
         this.busy = true;
-        this.executeEndpoint();
+        return this.executeEndpoint();
       })
     );
   }
@@ -129,6 +134,10 @@ class MobxEndpoint<
   receiveData(result: TResult) {
     this._value = result as TResult;
     this.busy = false;
+  }
+
+  receiveError(err: any) {
+    this._error = err;
   }
 
   /** The Observable State */
@@ -147,12 +156,23 @@ class MobxEndpoint<
     // Return value from cache
     const busy = this.busy;
     const value = this._value;
+    const error = this._error;
+    const hasData = value !== undefined;
+    if (error && !busy) {
+      return {
+        state: 'ERROR',
+        value: undefined,
+        hasData: false,
+        busy: busy,
+      };
+    }
     // If the endpoint is fully load
     // and no update is in progress
     if (!busy && value) {
       return {
-        state: 'load',
+        state: 'DONE',
         value,
+        hasData: hasData as true,
         busy: false,
       };
     }
@@ -160,15 +180,17 @@ class MobxEndpoint<
     // but an update is in progress
     if (busy && value) {
       return {
-        state: 'updating',
+        state: 'UPDATING',
         value,
+        hasData: hasData as true,
         busy: true,
       };
     }
     // If the endpoint was never load
     return {
-      state: 'loading',
+      state: 'LOADING',
       busy: true,
+      hasData: hasData as false,
       value: undefined,
     };
   }
@@ -183,14 +205,24 @@ class MobxEndpoint<
         }
       }
     ));
+    currentPromise.catch(error => {
+      // If the keys are not up to date anymore ignore the result
+      if (currentPromise === this._valuePromise) {
+        this.receiveError(error);
+      }
+      return currentPromise;
+    });
+    return currentPromise;
   }
 }
 
 decorate(MobxEndpoint, {
   receiveData: action,
+  receiveError: action,
   keys: observable,
   busy: observable,
   _value: observable,
+  _error: observable,
   setKeys: action,
   state: computed,
 });

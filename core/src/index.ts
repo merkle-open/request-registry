@@ -38,7 +38,10 @@ export interface EndpointGetOptions<TKeys, TResult, TKeysBind = TKeys> {
   afterError?: (result: Response) => any;
 }
 
-export interface EndpointWithBodyOptions<
+/**
+ * Options for POST | PUT  Endpoints
+ */
+export interface EndpointWithRequestBodyOptions<
   TKeys,
   TBody,
   TResult,
@@ -134,9 +137,16 @@ export interface EndpointGetFunction<
     eventName: "cacheClear",
     callback?: (previousCacheCreation: Date) => void
   ) => void;
+  /** Endpoint Method */
+  readonly method: "GET";
 }
 
-export interface EndpointWithBodyFunction<TKeys, TBody, TResult> {
+export interface EndpointWithRequestBodyFunction<
+  TKeys,
+  TBody,
+  TResult,
+  TMethod extends "POST" | "PUT"
+> {
   (keys: TKeys, body: TBody): Promise<TResult>;
   /**
    * The loader without caching
@@ -147,7 +157,15 @@ export interface EndpointWithBodyFunction<TKeys, TBody, TResult> {
     headers: { [key: string]: string },
     body: TBody
   ) => Promise<TResult>;
+  /** Endpoint Method */
+  readonly method: TMethod;
 }
+
+export interface EndpointPostFunction<TKeys, TBody, TResult>
+  extends EndpointWithRequestBodyFunction<TKeys, TBody, TResult, "POST"> {}
+
+export interface EndpointPutFunction<TKeys, TBody, TResult>
+  extends EndpointWithRequestBodyFunction<TKeys, TBody, TResult, "PUT"> {}
 
 export interface EndpointDeleteFunction<TKeys, TResult> {
   (keys: TKeys): Promise<TResult>;
@@ -159,6 +177,8 @@ export interface EndpointDeleteFunction<TKeys, TResult> {
     url: string,
     headers: { [key: string]: string }
   ) => Promise<TResult>;
+  /** Endpoint Method */
+  readonly method: "DELETE";
 }
 
 export type Cachable<T = string> = { cacheKey: string; value: T };
@@ -181,7 +201,7 @@ function createLoader<TKeys, TResult>(
   headers: { [key: string]: string }
 ) => Promise<TResult>;
 function createLoader<TKeys, TBody, TResult>(
-  options: EndpointWithBodyOptions<TKeys, TBody, TResult>,
+  options: EndpointWithRequestBodyOptions<TKeys, TBody, TResult>,
   method: "POST" | "PUT"
 ): (
   keys: TKeys,
@@ -191,7 +211,7 @@ function createLoader<TKeys, TBody, TResult>(
 ) => Promise<TResult>;
 function createLoader<TKeys, TBody, TResult>(
   options:
-    | EndpointWithBodyOptions<TKeys, TBody, TResult>
+    | EndpointWithRequestBodyOptions<TKeys, TBody, TResult>
     | EndpointGetOptions<TKeys, TResult>
     | EndpointDeleteOptions<TKeys, TResult>,
   method: "POST" | "PUT" | "GET" | "DELETE"
@@ -223,24 +243,32 @@ function createLoader<TKeys, TBody, TResult>(
   return loader;
 }
 
-function createWithBodyEndpoint<TKeys, TBody, TResult>(
-  loader: (
-    keys: TKeys,
-    url: string,
-    headers: { [key: string]: string },
-    body: TBody
-  ) => Promise<TResult>,
-  options: EndpointWithBodyOptions<TKeys, TBody, TResult>
+/**
+ * Factory for endpoints sending a data body (POST|PUT)
+ */
+function createWithRequestBodyEndpoint<
+  TKeys,
+  TBody,
+  TResult,
+  TMethod extends "POST" | "PUT"
+>(
+  method: TMethod,
+  options: EndpointWithRequestBodyOptions<TKeys, TBody, TResult>
 ) {
   const headerTemplate = options.headers || {};
   const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(
     headerTemplate
   );
-
+  const loader = createLoader<TKeys, TBody, TResult>(options, method);
   /**
    * Data loader
    */
-  const api: EndpointWithBodyFunction<TKeys, TBody, TResult> = Object.assign(
+  const api: EndpointWithRequestBodyFunction<
+    TKeys,
+    TBody,
+    TResult,
+    TMethod
+  > = Object.assign(
     function transmitFunction(keys: TKeys, body: TBody) {
       const url = getUrl(keys, options.url);
       const headers = getHeaders(keys, headerTemplate, headerKeys);
@@ -260,37 +288,38 @@ function createWithBodyEndpoint<TKeys, TBody, TResult>(
         body
       );
       // Fire handlers
-      ajaxResultPromise.then(
-        ajaxResult => {
-          options.afterSuccess && options.afterSuccess(ajaxResult);
-        },
-        error => {
-          options.afterError && options.afterError(error);
-        }
-      );
-      return ajaxResultPromise;
+      return ajaxResultPromise
+        .then(
+          ajaxResult =>
+            options.afterSuccess && options.afterSuccess(ajaxResult),
+          error => options.afterError && options.afterError(error)
+        )
+        .then(() => ajaxResultPromise);
     },
     {
-      loader
+      loader,
+      method
     }
   );
   return api;
 }
 
-export function createPostEndpoint<TKeys, TBody, TResult>(
-  options: EndpointWithBodyOptions<TKeys, TBody, TResult>
-): EndpointWithBodyFunction<TKeys, TBody, TResult> {
-  /** Some requests require special headers like auth tokens */
-  const loader = createLoader<TKeys, TBody, TResult>(options, "POST");
-  return createWithBodyEndpoint<TKeys, TBody, TResult>(loader, options);
+export function createPostEndpoint<TKeys, TBody, TResult = undefined>(
+  options: EndpointWithRequestBodyOptions<TKeys, TBody, TResult>
+): EndpointPostFunction<TKeys, TBody, TResult> {
+  return createWithRequestBodyEndpoint<TKeys, TBody, TResult, "POST">(
+    "POST",
+    options
+  );
 }
 
-export function createPutEndpoint<TKeys, TBody, TResult>(
-  options: EndpointWithBodyOptions<TKeys, TBody, TResult>
-): EndpointWithBodyFunction<TKeys, TBody, TResult> {
-  /** Some requests require special headers like auth tokens */
-  const loader = createLoader<TKeys, TBody, TResult>(options, "PUT");
-  return createWithBodyEndpoint<TKeys, TBody, TResult>(loader, options);
+export function createPutEndpoint<TKeys, TBody, TResult = undefined>(
+  options: EndpointWithRequestBodyOptions<TKeys, TBody, TResult>
+): EndpointPutFunction<TKeys, TBody, TResult> {
+  return createWithRequestBodyEndpoint<TKeys, TBody, TResult, "PUT">(
+    "PUT",
+    options
+  );
 }
 
 export function createGetEndpoint<TKeys, TResult>(
@@ -302,19 +331,20 @@ export function createGetEndpoint<TKeys, TResult>(
   const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(
     headerTemplate
   );
-  const cacheConsumers = new Map<
+  /** Helper map to track which CacheKeys can be garbage collected */
+  const keepInCacheTracker = new Map<
     /** CacheKey */ string,
     {
       /** The amount of cache consumers for the given CacheKey */
       count: number;
-      /** The timer to cleanup the given cache once all consumers are gone */
+      /** The setTimeout to cleanup the given cache once all consumers are gone */
       timeout?: number;
     }
   >();
   const cache: Cache<TResult> =
     options.cache || new Map<string, Promise<TResult>>();
   const emitter = new Emitter<{
-    cacheClear: (previousCacheCreation: Date) => void;
+    cacheClear: (previousCacheCreation: Date) => void | Promise<any>;
   }>();
   /**
    * Data loader
@@ -345,17 +375,16 @@ export function createGetEndpoint<TKeys, TResult>(
         }
       }
       // Fire handlers
-      ajaxResultPromise.then(
-        ajaxResult => {
-          options.afterSuccess && options.afterSuccess(ajaxResult);
-        },
-        error => {
-          options.afterError && options.afterError(error);
-        }
-      );
-      return ajaxResultPromise;
+      return ajaxResultPromise
+        .then(
+          ajaxResult =>
+            options.afterSuccess && options.afterSuccess(ajaxResult),
+          error => options.afterError && options.afterError(error)
+        )
+        .then(() => ajaxResultPromise);
     },
     {
+      method: "GET" as const,
       loader,
       /** Clears all cached requests */
       clearCache: () => {
@@ -363,8 +392,9 @@ export function createGetEndpoint<TKeys, TResult>(
         if (previousCacheCreation) {
           api.cacheCreation = undefined;
           cache.clear();
-          emitter.emit("cacheClear", previousCacheCreation);
+          return Promise.all(emitter.emit("cacheClear", previousCacheCreation));
         }
+        return Promise.resolve([]);
       },
       /**
        * Helper to prevent memory leaks for cached components
@@ -375,15 +405,15 @@ export function createGetEndpoint<TKeys, TResult>(
        */
       keepInCache: (keys: TKeys, timeout?: number) => {
         const cacheKey = api.getCacheKey(keys);
-        const consumer = cacheConsumers.get(cacheKey) || { count: 0 };
+        const consumer = keepInCacheTracker.get(cacheKey) || { count: 0 };
         consumer.count++;
         clearTimeout(consumer.timeout);
-        cacheConsumers.set(cacheKey, consumer);
+        keepInCacheTracker.set(cacheKey, consumer);
         let disposed = false;
         // Return the release from cache function
         // to allow garbage collection
         return () => {
-          const consumer = cacheConsumers.get(cacheKey);
+          const consumer = keepInCacheTracker.get(cacheKey);
           // If this is the last consumer and it has not been disposed
           // start the cleanup timer
           if (!disposed && consumer && --consumer.count <= 0) {
@@ -430,17 +460,16 @@ export function createDeleteEndpoint<TKeys, TResult>(
       const ajaxResultPromise = api.loader(keys, url.value, headers.value);
 
       // Fire handlers
-      ajaxResultPromise.then(
-        ajaxResult => {
-          options.afterSuccess && options.afterSuccess(ajaxResult);
-        },
-        error => {
-          options.afterError && options.afterError(error);
-        }
-      );
-      return ajaxResultPromise;
+      return ajaxResultPromise
+        .then(
+          ajaxResult =>
+            options.afterSuccess && options.afterSuccess(ajaxResult),
+          error => options.afterError && options.afterError(error)
+        )
+        .then(() => ajaxResultPromise);
     },
     {
+      method: "DELETE" as const,
       loader
     }
   );

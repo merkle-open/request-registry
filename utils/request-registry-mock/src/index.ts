@@ -1,44 +1,104 @@
 //
 // This is a dev util to allow mocking during development
 //
-import { EndpointGetFunction } from 'request-registry';
+import {
+  EndpointGetFunction,
+  EndpointDeleteFunction,
+  EndpointPostFunction,
+  EndpointPutFunction,
+} from 'request-registry';
+
+/** A GET or DELETE endpoint */
+type EndpointWithoutBody<TKeys, TResult> =
+  | EndpointGetFunction<TKeys, TResult>
+  | EndpointDeleteFunction<TKeys, TResult>;
+/** A POST or PUT endpoint */
+type EndpointWithBody<TKeys, TBody, TResult> =
+  | EndpointPostFunction<TKeys, TBody, TResult>
+  | EndpointPutFunction<TKeys, TBody, TResult>;
+/** A GET, DELETE, POST or PUT endpoint */
+type Endpoint = EndpointWithoutBody<any, any> | EndpointWithBody<any, any, any>;
+
+/** Extract the TKey type of an endpoint */
 type EndpointKeys<
-  TEndpointGetFunction
-> = TEndpointGetFunction extends EndpointGetFunction<infer TKeys, any>
+  TEndpointFunction extends Endpoint
+> = TEndpointFunction extends
+  | EndpointWithoutBody<infer TKeys, any>
+  | EndpointWithBody<infer TKeys, any, any>
   ? TKeys
   : never;
+
+/** Extract the TBody type of an endpoint */
+type EndpointBody<
+  TEndpointFunction
+> = TEndpointFunction extends EndpointWithBody<any, infer TBody, any>
+  ? TBody
+  : never;
+
+/** Extract the TResult type of an endpoint */
 type EndpointResult<
-  TEndpointGetFunction
-> = TEndpointGetFunction extends EndpointGetFunction<any, infer TResult>
+  TEndpointFunction extends Endpoint
+> = TEndpointFunction extends
+  | EndpointWithoutBody<any, infer TResult>
+  | EndpointWithBody<any, any, infer TResult>
   ? TResult
   : never;
 
-type LoaderFunction = ((
-  keys: any,
+/** The internal loader function of a GET or DELETE endpoint */
+type EndpointLoaderFunctionWithoutBody<
+  TEndpoint extends EndpointWithoutBody<any, any>
+> = (
+  keys: EndpointKeys<TEndpoint>,
   url: string,
   headers: { [key: string]: string }
-) => Promise<any>) & {
-  baseMock?: (
-    keys: any,
-    url: string,
-    headers: { [key: string]: string }
-  ) => Promise<any>;
-};
+) => Promise<EndpointResult<TEndpoint>>;
+
+/** The internal loader function of a POST or PUT endpoint */
+type EndpointLoaderFunctionWithBody<
+  TEndpoint extends EndpointWithBody<any, any, any>
+> = (
+  keys: EndpointKeys<TEndpoint>,
+  url: string,
+  headers: { [key: string]: string },
+  body: EndpointBody<TEndpoint>
+) => Promise<EndpointResult<TEndpoint>>;
+
+/** The internal loader function of a GET, PUT, POST or DELETE endpoint */
+type EndpointLoader<
+  TEndpoint extends Endpoint
+> = TEndpoint extends EndpointWithoutBody<
+  EndpointKeys<TEndpoint>,
+  EndpointResult<TEndpoint>
+>
+  ? EndpointLoaderFunctionWithoutBody<TEndpoint>
+  : TEndpoint extends EndpointWithBody<
+      EndpointKeys<TEndpoint>,
+      EndpointBody<TEndpoint>,
+      EndpointResult<TEndpoint>
+    >
+  ? EndpointLoaderFunctionWithBody<TEndpoint>
+  : never;
 
 /**
  * Helper to store all original loader functions to revert back to the original
  */
 const originalLoaders = new WeakMap<
-  EndpointGetFunction<any, any>,
-  LoaderFunction[]
+  Endpoint,
+  Array<
+    EndpointLoaderFunctionWithBody<any> | EndpointLoaderFunctionWithoutBody<any>
+  >
 >();
 /**
  * Set of all currently active mocks
  */
-const activeMocks = new Set<EndpointGetFunction<any, any>>();
+const activeMocks = new Set<Endpoint>();
 
-const baseMocks = new WeakMap<LoaderFunction, LoaderFunction>();
+const baseMocks = new WeakMap<EndpointLoader<any>, EndpointLoader<any>>();
 
+type EndpointMock = {
+  activate: () => () => void;
+  clear: () => void;
+};
 /**
  * Create a mock controller which allows to easily activate or deactivate this mock version
  * Usage:
@@ -53,14 +113,32 @@ const baseMocks = new WeakMap<LoaderFunction, LoaderFunction>();
  *
  */
 export function createEndpointMock<
-  TEndpoint extends EndpointGetFunction<any, any>,
-  TKeys extends EndpointKeys<TEndpoint>,
-  TResult extends EndpointResult<TEndpoint>,
-  TMock extends (keys: TKeys, url: string) => Promise<TResult>
->(endpoint: TEndpoint, mockResponse: TMock, delay?: number) {
+  TEndpoint extends EndpointWithBody<any, any, any>,
+  TMockResponse extends EndpointLoaderFunctionWithBody<TEndpoint>
+>(
+  endpoint: TEndpoint,
+  mockResponse: TMockResponse,
+  delay?: number
+): EndpointMock;
+export function createEndpointMock<
+  TEndpoint extends EndpointWithoutBody<any, any>,
+  TMockResponse extends EndpointLoaderFunctionWithoutBody<TEndpoint>
+>(
+  endpoint: TEndpoint,
+  mockResponse: TMockResponse,
+  delay?: number
+): EndpointMock;
+export function createEndpointMock<
+  TEndpoint extends Endpoint,
+  TMockResponse extends EndpointLoader<TEndpoint>
+>(
+  endpoint: TEndpoint,
+  mockResponse: TMockResponse,
+  delay?: number
+): EndpointMock {
   return {
     activate: () =>
-      mockEndpoint<TEndpoint, TMock>(endpoint, mockResponse, delay),
+      mockEndpoint<TEndpoint, TMockResponse>(endpoint, mockResponse, delay),
     clear: () => unmockEndpoint(endpoint, mockResponse),
   };
 }
@@ -88,12 +166,21 @@ export function activateMocks(
  * This mock will be executed whenever the endpoint is loaded
  */
 export function mockEndpoint<
-  TEndpoint extends EndpointGetFunction<any, any>,
-  TMock extends (
-    keys: EndpointKeys<TEndpoint>,
-    url: string
-  ) => Promise<EndpointResult<TEndpoint>>
->(endpoint: TEndpoint, mockResponse: TMock, delay?: number) {
+  TEndpoint extends EndpointWithBody<any, any, any>,
+  TMockResponse extends EndpointLoaderFunctionWithBody<TEndpoint>
+>(endpoint: TEndpoint, mockResponse: TMockResponse, delay?: number): () => void;
+export function mockEndpoint<
+  TEndpoint extends EndpointWithoutBody<any, any>,
+  TMockResponse extends EndpointLoaderFunctionWithoutBody<TEndpoint>
+>(endpoint: TEndpoint, mockResponse: TMockResponse, delay?: number): () => void;
+export function mockEndpoint<
+  TEndpoint extends Endpoint,
+  TMockResponse extends EndpointLoader<TEndpoint>
+>(endpoint: TEndpoint, mockResponse: TMockResponse, delay?: number): () => void;
+export function mockEndpoint<
+  TEndpoint extends Endpoint,
+  TMockResponse extends EndpointLoader<TEndpoint>
+>(endpoint: TEndpoint, mockResponse: TMockResponse, delay?: number) {
   // Remember the previous loader
   const originalLoadersOfEndpoint = originalLoaders.get(endpoint) || [];
   originalLoadersOfEndpoint.push(endpoint.loader);
@@ -102,26 +189,17 @@ export function mockEndpoint<
   if (originalLoadersOfEndpoint.length === 1) {
     originalLoaders.set(endpoint, originalLoadersOfEndpoint);
   }
-  endpoint.loader = function(_keys, url) {
+  endpoint.loader = function(
+    _keys: EndpointKeys<TEndpoint>,
+    url: string,
+    headers: {},
+    body?: EndpointBody<TEndpoint>
+  ) {
     const args = arguments;
     const mockResult = new Promise(resolve => setTimeout(resolve, delay)).then(
-      () => mockResponse.apply(this, args as any)
+      () => (mockResponse as any).apply(this, args) as EndpointResult<TEndpoint>
     );
-    // For nodejs skip the fake request
-    /* istanbul ignore else */
-    if (typeof fetch === 'undefined') {
-      return mockResult;
-    } else {
-      // For the browser
-      // create a fake request in network panel
-      return mockResult
-        .then(_fakeResponse =>
-          fetch(`data:;url=${(url = url.replace(/[,;]/g, ''))},`)
-        )
-        .then(_responseText => {
-          return mockResult;
-        });
-    }
+    return logRequest(endpoint, url, headers, mockResult, body);
   };
   // Add the original mockFunction to find it during cleanup
   baseMocks.set(endpoint.loader, mockResponse);
@@ -129,16 +207,19 @@ export function mockEndpoint<
   return unmockEndpoint.bind(null, endpoint, endpoint.loader);
 }
 
-function getBaseMock(loaderFunction: LoaderFunction) {
+function getBaseMock(loaderFunction: EndpointLoader<any>) {
   return baseMocks.get(loaderFunction);
 }
 
 /**
  * Reverts back to the original endpoint behaviour
+ *
+ * If a specific mock function is given only this function
+ * will be reverted
  */
 function unmockEndpoint(
-  endpoint: EndpointGetFunction<any, any>,
-  loaderFunction?: LoaderFunction
+  endpoint: Endpoint,
+  loaderFunction?: EndpointLoader<any>
 ) {
   const originalLoadersOfEndpoint = originalLoaders.get(endpoint) || [];
   if (getBaseMock(endpoint.loader) === loaderFunction) {
@@ -176,18 +257,16 @@ function unmockEndpoint(
  * Activate a mock for a given endpoint for one request
  */
 export function mockEndpointOnce<
-  TEndpoint extends EndpointGetFunction<any, any>,
-  TMock extends (
-    keys: EndpointKeys<TEndpoint>,
-    url: string
-  ) => Promise<EndpointResult<TEndpoint>>
->(endpoint: TEndpoint, mockResponse: TMock, delay?: number) {
-  const disposer = mockEndpoint<TEndpoint, TMock>(
+  TEndpoint extends Endpoint,
+  TMockResponse extends EndpointLoader<TEndpoint>
+>(endpoint: TEndpoint, mockResponse: TMockResponse, delay?: number) {
+  const unmockingMockResponse: TMockResponse = function(...args: any) {
+    unmockEndpoint(endpoint, mockResponse);
+    return (mockResponse as any).apply(null, args);
+  } as any;
+  const disposer = mockEndpoint<TEndpoint, TMockResponse>(
     endpoint,
-    function(...args: any) {
-      unmockEndpoint(endpoint, mockResponse);
-      return mockResponse.apply(null, args);
-    } as TMock,
+    unmockingMockResponse,
     delay
   );
   baseMocks.set(endpoint.loader, mockResponse);
@@ -201,4 +280,114 @@ export function unmockAllEndpoints() {
   activeMocks.forEach(mockedEndpoint => {
     unmockEndpoint(mockedEndpoint);
   });
+}
+
+/**
+ * Allow to group multiple mocks into one
+ *
+ * Usage:
+ * ```
+ * const mockGroup = groupMockEndpoints(mock1, mock2);
+ * mockGroup.activate();
+ * ```
+ *
+ * It is even possible to group multiple groups into one.
+ */
+export function groupMockEndpoints(...mocks: EndpointMock[]): EndpointMock {
+  const clear = () => {
+    mocks.map(mock => mock.clear());
+  };
+  return {
+    activate: () => {
+      mocks.map(mock => mock.activate());
+      return clear;
+    },
+    clear,
+  };
+}
+
+/**
+ * DuckTyping helper to detect if the function is a 'GET','DELETE' or 'PUT','POST'
+ */
+function isEndpointFunctionWithoutBody<TEndpoint extends Endpoint>(
+  endpoint: Endpoint
+): endpoint is EndpointWithoutBody<
+  EndpointKeys<TEndpoint>,
+  EndpointResult<TEndpoint>
+> {
+  return endpoint.method === 'GET' || endpoint.method === 'DELETE';
+}
+
+function logRequest<TEndpoint extends Endpoint>(
+  endpoint: TEndpoint,
+  url: string,
+  headers: {},
+  result: Promise<EndpointResult<TEndpoint>>,
+  body?: EndpointBody<TEndpoint>
+) {
+  // For nodejs skip the fake request
+  /* istanbul ignore else */
+  if (typeof fetch === 'undefined') {
+    return result;
+  } else {
+    // For the browser
+    // create a fake request in network panel
+    return result
+      .then(_fakeResponse =>
+        fetch(
+          `data:;url=${(url = url.replace(/[,;]/g, ''))},` +
+            JSON.stringify(_fakeResponse),
+          {
+            method: endpoint.method,
+            headers,
+            ...(isEndpointFunctionWithoutBody(endpoint)
+              ? {}
+              : { body: JSON.stringify(body) }),
+          }
+        )
+      )
+      .then(_responseText => result)
+      .then(
+        mockResponseData =>
+          groupLog(
+            [
+              `📨%c${endpoint.method} - %c${url}`,
+              'font-weight:normal',
+              'font-size: 80%; font-weight: normal',
+            ],
+            isEndpointFunctionWithoutBody(endpoint)
+              ? [mockResponseData]
+              : [body, mockResponseData]
+          ),
+        error =>
+          groupLog(
+            [
+              `📨%c${endpoint.method} - %c${url}`,
+              'font-weight:normal',
+              'font-size: 80%; font-weight: normal; color: red',
+            ],
+            isEndpointFunctionWithoutBody(endpoint) ? [error] : [body, error]
+          )
+      )
+      .then(() => result);
+  }
+}
+
+/**
+ * Small helper for styled console logs
+ */
+function groupLog(entry: string[], content: any[]) {
+  const isBrowser = typeof window !== 'undefined';
+  const simpleMode = !isBrowser;
+  const [entryText, ...entryStyles] = entry;
+  const processedEntryText = simpleMode
+    ? (entryText || '').replace(/\%c/g, '')
+    : entryText || '';
+  const groupStart = simpleMode ? console.log : console.groupCollapsed;
+  const groupEnd = (simpleMode ? () => {} : console.groupEnd).bind(console);
+  groupStart.apply(console, [processedEntryText].concat(
+    simpleMode ? [] : entryStyles
+  ) as any);
+  content.forEach(contentRow => console.log(contentRow));
+  groupEnd();
 }

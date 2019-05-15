@@ -1,12 +1,12 @@
 import * as React from "react";
-import { useGetEndPoint } from "../src";
+import { useGetEndPoint, useGetEndPointSuspendable } from "../src";
 import { createGetEndpoint } from "request-registry";
 import {
   mockEndpoint,
   unmockAllEndpoints,
   mockEndpointOnce
 } from "request-registry-mock";
-import { render } from "react-testing-library";
+import { render, wait } from "react-testing-library";
 
 afterAll(() => {
   unmockAllEndpoints();
@@ -21,10 +21,10 @@ describe("request-registry-react", () => {
       mockEndpoint(userEndpoint, async () => ({ name: "Alex" }));
       const UserDetails = (props: { id: string }) => {
         const endpointState = useGetEndPoint(userEndpoint, { id: props.id });
-        if (endpointState.state !== "load") {
+        if (endpointState.state !== "DONE") {
           return <div>loading</div>;
         }
-        return <div>{endpointState.data.name}</div>;
+        return <div>{endpointState.value.name}</div>;
       };
       const { container } = render(<UserDetails id="4" />);
       expect(container.innerHTML).toEqual("<div>loading</div>");
@@ -37,10 +37,10 @@ describe("request-registry-react", () => {
       mockEndpoint(userEndpoint, async () => ({ name: "Alex" }));
       const UserDetails = (props: { id: string }) => {
         const endpointState = useGetEndPoint(userEndpoint, { id: props.id });
-        if (endpointState.state !== "load") {
+        if (endpointState.state !== "DONE") {
           return <div>loading</div>;
         }
-        return <div>{endpointState.data.name}</div>;
+        return <div>{endpointState.value.name}</div>;
       };
       const { container } = render(<UserDetails id="4" />);
       await userEndpoint({ id: "4" });
@@ -56,16 +56,16 @@ describe("request-registry-react", () => {
       mockEndpoint(runsEndpoint, async () => ({ run: runs++ }));
       const Runs = () => {
         const endpointState = useGetEndPoint(runsEndpoint, {});
-        if (endpointState.state !== "load") {
+        if (endpointState.state !== "DONE") {
           return <div>loading</div>;
         }
-        return <div>{endpointState.data.run}</div>;
+        return <div>{endpointState.value.run}</div>;
       };
       const { container } = render(<Runs />);
-      await runsEndpoint({});
+      await wait();
       expect(container.innerHTML).toEqual("<div>0</div>");
       runsEndpoint.clearCache();
-      await runsEndpoint({});
+      await wait();
       expect(container.innerHTML).toEqual("<div>1</div>");
     });
 
@@ -83,10 +83,10 @@ describe("request-registry-react", () => {
       );
       const UserDetails = (props: { id: string }) => {
         const endpointState = useGetEndPoint(userEndpoint, { id: props.id });
-        if (endpointState.state !== "load") {
+        if (endpointState.state !== "DONE") {
           return <div>loading</div>;
         }
-        return <div>{endpointState.data.name}</div>;
+        return <div>{endpointState.value.name}</div>;
       };
       const { container } = render(<UserDetails id="4" />);
       // Execute slow reqeust
@@ -98,6 +98,46 @@ describe("request-registry-react", () => {
       await slowRequest;
       // Make sure that the slow request which ended later is not shown in the result:
       expect(container.innerHTML).toEqual("<div>Fast</div>");
+    });
+  });
+  describe("useGetEndPointSuspendable", () => {
+    it("renders loading state", () => {
+      const userEndpoint = createGetEndpoint<{ id: string }, { name: string }>({
+        url: ({ id }) => `/user/${id}`
+      });
+      mockEndpoint(userEndpoint, async () => ({ name: "Alex" }));
+      const UserDetails = (props: { id: string }) => {
+        const { name } = useGetEndPointSuspendable(userEndpoint, {
+          id: props.id
+        });
+        return <div>{name}</div>;
+      };
+      const { container } = render(
+        <React.Suspense fallback={<div>loading</div>}>
+          <UserDetails id="4" />
+        </React.Suspense>
+      );
+      expect(container.innerHTML).toEqual("<div>loading</div>");
+    });
+
+    it("renders values", async () => {
+      const userEndpoint = createGetEndpoint<{ id: string }, { name: string }>({
+        url: ({ id }) => `/user/${id}`
+      });
+      mockEndpoint(userEndpoint, async () => ({ name: "Alex" }));
+      const UserDetails = (props: { id: string }) => {
+        const { name } = useGetEndPointSuspendable(userEndpoint, {
+          id: props.id
+        });
+        return <div>{name}</div>;
+      };
+      const { container } = render(
+        <React.Suspense fallback={<div>loading</div>}>
+          <UserDetails id="4" />
+        </React.Suspense>
+      );
+      await wait();
+      expect(container.innerHTML).toEqual("<div>Alex</div>");
     });
   });
 });

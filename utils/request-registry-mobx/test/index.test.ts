@@ -33,7 +33,7 @@ describe('request-registry-mobx', () => {
       });
       mockEndpointOnce(userEndpoint, async () => ({ name: 'Sue', age: 24 }), 1);
       const endpoint = createObservableEndpoint(userEndpoint, { id: '1' });
-      expect(endpoint.state).toEqual('loading');
+      expect(endpoint.state).toEqual('LOADING');
       expect(endpoint.busy).toEqual(true);
     });
 
@@ -46,8 +46,8 @@ describe('request-registry-mobx', () => {
       });
       mockEndpointOnce(userEndpoint, async () => ({ name: 'Sue', age: 24 }), 1);
       const endpoint = createObservableEndpoint(userEndpoint, { id: '1' });
-      await when(() => endpoint.state !== 'loading');
-      expect(endpoint.state).toEqual('load');
+      await when(() => endpoint.state !== 'LOADING');
+      expect(endpoint.state).toEqual('DONE');
       expect(endpoint.busy).toEqual(false);
       expect(endpoint.value).toEqual({ name: 'Sue', age: 24 });
     });
@@ -63,8 +63,8 @@ describe('request-registry-mobx', () => {
       const endpoint = createObservableEndpoint(userEndpoint);
       expect(endpoint.busy).toEqual(true);
       endpoint.setKeys({ id: '1' });
-      await when(() => endpoint.state !== 'loading');
-      expect(endpoint.state).toEqual('load');
+      await when(() => endpoint.state !== 'LOADING');
+      expect(endpoint.state).toEqual('DONE');
       expect(endpoint.busy).toEqual(false);
       expect(endpoint.value).toEqual({ name: 'Sue', age: 24 });
     });
@@ -79,13 +79,13 @@ describe('request-registry-mobx', () => {
       mockEndpointOnce(userEndpoint, async () => ({ name: 'Sue', age: 24 }), 1);
       const endpoint = createObservableEndpoint(userEndpoint, { id: '1' });
       // Wait for first request
-      await when(() => endpoint.state !== 'loading');
+      await when(() => endpoint.state !== 'LOADING');
       mockEndpointOnce(userEndpoint, async () => ({ name: 'Joe', age: 18 }), 1);
       // Trigger second request
       endpoint.setKeys({ id: '2' });
       // Wait for second request
-      await when(() => endpoint.state !== 'load');
-      expect(endpoint.state).toEqual('updating');
+      await when(() => endpoint.state !== 'DONE');
+      expect(endpoint.state).toEqual('UPDATING');
       expect(endpoint.busy).toEqual(true);
       // Should still allow accessing the outdated value:
       expect(endpoint.value).toEqual({ name: 'Sue', age: 24 });
@@ -109,13 +109,13 @@ describe('request-registry-mobx', () => {
       );
       const endpoint = createObservableEndpoint(userEndpoint, { id: '1' });
       // Wait for first request
-      await when(() => endpoint.state !== 'loading');
+      await when(() => endpoint.state !== 'LOADING');
       // Trigger second request
       endpoint.setKeys({ id: '2' });
       // Wait for second request
-      await when(() => endpoint.state !== 'load');
-      await when(() => endpoint.state !== 'updating');
-      expect(endpoint.state).toEqual('load');
+      await when(() => endpoint.state !== 'DONE');
+      await when(() => endpoint.state !== 'UPDATING');
+      expect(endpoint.state).toEqual('DONE');
       expect(endpoint.busy).toEqual(false);
       expect(endpoint.value).toEqual({ name: 'Joe', age: 18 });
     });
@@ -144,7 +144,7 @@ describe('request-registry-mobx', () => {
       expect(endpoint.busy).toEqual(true);
       // Start a request which will finish before the slow one finishs
       endpoint.setKeys({ id: 'fast-request' });
-      await when(() => endpoint.state !== 'loading');
+      await when(() => endpoint.state !== 'LOADING');
       // Start for the slow request to finish
       await sleep(20);
       // Ensure that the data belongs to the fast one
@@ -160,7 +160,7 @@ describe('request-registry-mobx', () => {
       const endpoint = createObservableEndpoint(runEndpoint, { id: '1' });
       // Start observing the endpoint:
       const unobserve = autorun(() => endpoint.value);
-      await when(() => endpoint.state === 'load');
+      await when(() => endpoint.state === 'DONE');
       expect(endpoint.value).toEqual({ runs: 1 });
       // Invalidate the cache:
       runEndpoint.clearCache();
