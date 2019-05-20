@@ -9,6 +9,9 @@ import { AjaxError as AjaxErrorType } from "./lib/errorHandler";
 export { ERROR_EMITTER } from "./lib/errorHandler";
 export type AjaxError = AjaxErrorType;
 
+/** Default Headers for POST and PUT requests */
+const defaultSendHeaders = { "Content-Type": "application/json" };
+
 // GET Options
 export interface EndpointGetOptions<TKeys, TResult, TKeysBind = TKeys>
   extends EndpointOptions<TKeys, null, TResult, TKeysBind>,
@@ -160,11 +163,10 @@ export interface EndpointPostFunction<TKeys, TBody, TResult>
 export function createPostEndpoint<TKeys, TBody, TResult = undefined>(
   options: EndpointPostOptions<TKeys, TBody, TResult>
 ) {
-  const defaultPostHeaders = { "Content-Type": "application/json" };
   return createEndpoint(
     "POST",
     Object.assign({ cacheRequest: false }, options, {
-      headers: Object.assign(defaultPostHeaders, options.headers)
+      headers: Object.assign({}, defaultSendHeaders, options.headers)
     })
   ) as EndpointPostFunction<TKeys, TBody, TResult>;
 }
@@ -217,11 +219,10 @@ export interface EndpointPutFunction<TKeys, TBody, TResult>
 export function createPutEndpoint<TKeys, TBody, TResult = undefined>(
   options: EndpointPutOptions<TKeys, TBody, TResult>
 ) {
-  const defaultPutHeaders = { "Content-Type": "application/json" };
   return createEndpoint(
     "PUT",
     Object.assign({ cacheRequest: false }, options, {
-      headers: Object.assign(defaultPutHeaders, options.headers)
+      headers: Object.assign({}, defaultSendHeaders, options.headers)
     })
   ) as EndpointPutFunction<TKeys, TBody, TResult>;
 }
