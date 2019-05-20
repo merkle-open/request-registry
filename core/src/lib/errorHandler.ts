@@ -23,7 +23,8 @@ export function errorHandler(
     .clone()
     // Text to support JSON & text
     .text()
-    .catch(resultText => {
+    .catch(text => text)
+    .then(resultText => {
       try {
         return JSON.parse(resultText);
       } catch (e) {
@@ -56,9 +57,11 @@ function broadcastAjaxError(
     if (!defaultWasPrevented) {
       reject(
         new Error(
-          `Unhandled ajax error ${response.status} ${JSON.stringify(
-            responseContent
-          )} Resolve Attemps: ${errorHandlingAttemps.join(",") || "none"}`
+          process.env.NODE_ENV !== "production"
+            ? `Unhandled ajax error ${response.status} ${JSON.stringify(
+                responseContent
+              )} Resolve Attemps: ${errorHandlingAttemps.join(",") || "none"}`
+            : "Ajax failed"
         )
       );
     }

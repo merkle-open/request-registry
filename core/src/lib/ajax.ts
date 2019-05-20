@@ -27,15 +27,12 @@ export function recursiveLoader(
     return loadFn(url, { method, headers, body }).then((response: Response) => {
       return response.ok
         ? response
-        : errorHandler(response, errorHandlingAttemps).then(
-            resolverName => {
-              // Store the resolver name
-              errorHandlingAttemps.push(resolverName);
-              // Retry loading
-              return loadWithErrorHandling();
-            },
-            () => response
-          );
+        : errorHandler(response, errorHandlingAttemps).then(resolverName => {
+            // Store the resolver name
+            errorHandlingAttemps.push(resolverName);
+            // Retry loading
+            return loadWithErrorHandling();
+          });
     });
   }
   return loadWithErrorHandling();

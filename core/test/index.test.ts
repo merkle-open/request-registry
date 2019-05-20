@@ -1,7 +1,6 @@
 import fetchMock from "fetch-mock";
 import {
   createGetEndpoint,
-  createGetEndpointConverter,
   createPostEndpoint,
   createPutEndpoint,
   createDeleteEndpoint
@@ -84,7 +83,9 @@ test("should fire the error function once a request fails", async () => {
     }
   );
   const error = await userEndpoint({ id: "4" }).catch(error => error);
-  expect(error.message).toEqual('Unexpected status 404 - "Not Found".');
+  expect(error.message).toEqual(
+    'Unhandled ajax error 404 {"message":""} Resolve Attemps: none'
+  );
 });
 
 test("should allow to use a custom loader", async () => {
@@ -97,65 +98,6 @@ test("should allow to use a custom loader", async () => {
   });
   const user = await userEndpoint({ a: 1, b: 2 });
   expect(user).toEqual({ sum: 3 });
-});
-
-test("should allow to use a converter for an endpoint", async () => {
-  fetchMock.get("http://example.com/user/4", () => ({
-    firstName: "Joe",
-    lastName: "Doe"
-  }));
-  const userEndpoint = createGetEndpoint<
-    { id: string },
-    { firstName: string; lastName: string }
-  >({
-    url: keys => `http://example.com/user/${keys.id}`
-  });
-  const fullNameConverter = createGetEndpointConverter(
-    userEndpoint,
-    data => data.firstName + " " + data.lastName
-  );
-  const user = await fullNameConverter({ id: "4" });
-  expect(user).toEqual("Joe Doe");
-});
-
-test("should cache converted values", async () => {
-  let convertionCount = 0;
-  fetchMock.get("*", () => ({ firstName: "Joe", lastName: "Doe" }));
-  const userEndpoint = createGetEndpoint<
-    { id: string },
-    { firstName: string; lastName: string }
-  >({
-    url: keys => `http://example.com/user/${keys.id}`
-  });
-  const fullNameConverter = createGetEndpointConverter(userEndpoint, data => {
-    convertionCount++;
-    return data.firstName + " " + data.lastName;
-  });
-  await fullNameConverter({ id: "4" });
-  await fullNameConverter({ id: "4" });
-  await fullNameConverter({ id: "4" });
-  expect(convertionCount).toEqual(1);
-});
-
-test("should revoke the cache of converted values if the endpoint cache is cleared", async () => {
-  let convertionCount = 0;
-  fetchMock.get("*", () => ({ firstName: "Joe", lastName: "Doe" }));
-  const userEndpoint = createGetEndpoint<
-    { id: string },
-    { firstName: string; lastName: string }
-  >({
-    url: keys => `http://example.com/user/${keys.id}`
-  });
-  const fullNameConverter = createGetEndpointConverter(userEndpoint, data => {
-    convertionCount++;
-    return data.firstName + " " + data.lastName;
-  });
-  await fullNameConverter({ id: "4" });
-  await fullNameConverter({ id: "4" });
-  userEndpoint.clearCache();
-  await fullNameConverter({ id: "4" });
-  await fullNameConverter({ id: "4" });
-  expect(convertionCount).toEqual(2);
 });
 
 test("should allow memory cleanup", async () => {

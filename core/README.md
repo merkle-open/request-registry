@@ -154,23 +154,3 @@ const userEndpoint = createGetEndpoint<Input, Output>({
 userEndpoint.loader = () => Promise.resolve({ name: "I am a custom loader!" });
 userEndpoint({ id: "4" }).then(data => console.log(data.name));
 ```
-
-## Converters - Still a work in progress!
-
-Converters allow to cache data transformations for cases where the backend data does not match with your frontend
-data structure requirements.
-
-```ts
-const userEndpoint = createGetEndpoint<{ id: string }, { firstName: string; lastName: string }>({
-  url: (keys) => `http://example.com/user/${keys.id}`,
-});
-
-const fullNameConverter = createGetEndpointConverter(userEndpoint, (data) => {
-  convertionCount++;
-  return {
-    ...data,
-    fullName: data.firstName + ' ' + data.lastName;
-  }
-});
-fullNameConverter({ id: '4' }).then((data) => console.log(data.fullName));
-```
