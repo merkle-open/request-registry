@@ -1,6 +1,6 @@
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import { useGetEndPoint } from "../src/";
+import { useGetEndPoint } from "request-registry-react";
 import { loginEndpoint, productsEndpoint, logoutEndpoint } from "./endpoints";
 import {
   loginEndpointMock,

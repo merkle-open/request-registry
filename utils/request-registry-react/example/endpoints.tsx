@@ -1,11 +1,15 @@
-import {
-  createGetEndpoint,
-  createPostEndpoint
-} from "../node_modules/request-registry";
+import { createGetEndpoint, createPostEndpoint } from "request-registry";
 
+/** Load Product */
+interface IProduct {
+  title: string;
+  productId: string;
+  price: number;
+  description: string;
+}
 export const productsEndpoint = createGetEndpoint<
   { brandId: string },
-  { title: string; productId: string; price: number; description: string }
+  IProduct
 >({
   url: ({ brandId }) => `/get/products/brand/${brandId}`,
   afterError: () => console.error("Product could not be load")

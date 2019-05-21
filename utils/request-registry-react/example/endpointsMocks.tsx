@@ -1,5 +1,5 @@
 import { loginEndpoint, logoutEndpoint, productsEndpoint } from "./endpoints";
-import { createEndpointMock } from "../node_modules/request-registry-mock";
+import { createEndpointMock } from "request-registry-mock";
 
 export const productsEndpointMock = createEndpointMock(
   productsEndpoint,

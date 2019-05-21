@@ -8,8 +8,9 @@
     "start": "parcel index.html"
   },
   "alias": {
-    "request-registry": "../node_modules/request-registry",
-    "request-registry-mock": "../node_modules/request-registry-mock",
+    "request-registry": "../../../core",
+    "request-registry-mock": "../../request-registry-mock",
+    "request-registry-react": "../",
     "react": "../../../node_modules/react",
     "react-dom": "../../../node_modules/react-dom"
   },
