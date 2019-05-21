@@ -18,15 +18,15 @@
     "request-registry": "*"
   },
   "devDependencies": {
-    "@types/jest": "24.0.12",
-    "@types/react": "16.8.17",
+    "@types/jest": "24.0.13",
+    "@types/react": "16.8.18",
     "@types/react-dom": "16.8.4",
     "react": "16.9.0-alpha.0",
     "react-dom": "16.9.0-alpha.0",
-    "react-testing-library": "7.0.0",
+    "react-testing-library": "7.0.1",
     "request-registry": "*",
     "request-registry-mock": "*",
-    "tsdx": "0.5.8",
+    "tsdx": "0.5.11",
     "tslib": "1.9.3",
     "typescript": "3.4.5"
   },

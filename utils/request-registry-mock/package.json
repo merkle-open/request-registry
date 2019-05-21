@@ -28,14 +28,17 @@
     "trailingComma": "es5"
   },
   "devDependencies": {
-    "@types/jest": "24.0.12",
+    "@types/jest": "24.0.13",
     "request-registry": "*",
-    "tsdx": "0.5.8",
+    "tsdx": "0.5.11",
     "tslib": "1.9.3",
     "typescript": "3.4.5"
   },
   "jest": {
     "collectCoverage": true,
-    "coverageReporters": ["json", "html"]
+    "coverageReporters": [
+      "json",
+      "html"
+    ]
   }
 }

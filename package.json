@@ -3,12 +3,17 @@
   "version": "1.0.0",
   "description": "RequestRegistry is a generic utility (~1.5kb gziped) to be used as part of your frontend data fetching layer to provide a typed, simplified and consistent API over various remote web services via caching.",
   "scripts": {
+    "// Installation": "",
     "postinstall": "lerna bootstrap --hoist --no-ci",
-    "commit": "git-cz",
+    "// Build": "",
     "build": "lerna exec --concurrency 1 -- npm run build",
     "prettier": "prettier --write \"**/*.*(js|jsx|ts|tsx|json)\"",
     "test": "lerna run test",
-    "size": "lerna run size"
+    "size": "lerna run size",
+    "// Package Management": "",
+    "upgrade": "lerna exec --concurrency 1 -- npx npm-check-updates -u",
+    "clean": "lerna exec --concurrency 1 -- npx rimraf node_modules .rts* dist coverage .cache; npx rimraf node_modules",
+    "commit": "git-cz"
   },
   "author": "Jan Nicklas",
   "license": "MIT",
