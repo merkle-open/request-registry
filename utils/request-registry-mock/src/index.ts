@@ -202,7 +202,7 @@ export function mockEndpoint<
 	) {
 		const args = arguments;
 		const mockResult = new Promise(resolve =>
-			setTimeout(resolve, delay)
+			delay ? setTimeout(resolve, delay) : resolve()
 		).then(
 			() =>
 				(mockResponse as any).apply(this, args) as EndpointResult<
@@ -272,12 +272,13 @@ export function mockEndpointOnce<
 >(endpoint: TEndpoint, mockResponse: TMockResponse, delay?: number) {
 	const unmockingMockResponse: TMockResponse = function(...args: any) {
 		unmockEndpoint(endpoint, mockResponse);
-		return (mockResponse as any).apply(null, args);
+		return new Promise(resolve =>
+			delay ? setTimeout(resolve, delay) : resolve()
+		).then(() => (mockResponse as any).apply(null, args));
 	} as any;
 	const disposer = mockEndpoint<TEndpoint, TMockResponse>(
 		endpoint,
-		unmockingMockResponse,
-		delay
+		unmockingMockResponse
 	);
 	baseMocks.set(endpoint.loader, mockResponse);
 	return disposer;
