@@ -9,8 +9,9 @@
     "dist"
   ],
   "scripts": {
-    "start": "tsdx watch",
     "build": "tsdx build",
+    "prepublishOnly": "pkg-ok",
+    "start": "tsdx watch",
     "test": "tsdx test"
   },
   "peerDependencies": {
@@ -27,6 +28,7 @@
   "devDependencies": {
     "@types/jest": "24.0.13",
     "mobx": "5.9.4",
+    "pkg-ok": "2.3.1",
     "request-registry": "*",
     "request-registry-mock": "*",
     "tsdx": "0.5.11",

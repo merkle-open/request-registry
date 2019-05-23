@@ -12,19 +12,21 @@
     "dist"
   ],
   "scripts": {
-    "start": "tsdx watch",
-    "commit": "git-cz",
     "build": "tsdx build",
+    "commit": "git-cz",
     "prettier": "prettier --write \"**/*.*(js|jsx|ts|tsx|json)\"",
-    "test": "tsdx test",
+    "prepublishOnly": "pkg-ok",
+    "release": "standard-version",
     "size": "npx size-limit",
-    "release": "standard-version"
+    "start": "tsdx watch",
+    "test": "tsdx test"
   },
   "devDependencies": {
     "@types/fetch-mock": "7.2.5",
     "@types/jest": "24.0.13",
     "fetch-mock": "7.3.3",
     "node-fetch": "2.6.0",
+    "pkg-ok": "2.3.1",
     "tsdx": "0.5.11",
     "typescript": "3.4.5"
   },
