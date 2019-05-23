@@ -20,7 +20,7 @@ export interface EndpointGetOptions<TKeys, TResult, TKeysBind = TKeys>
 	 * A function to create the url
 	 */
 	url: (keys: TKeysBind) => string;
-	headers?: { [keys: string]: (keys: TKeysBind) => string };
+	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
 	/**
 	 * Wether to cache the request - true by default
 	 */
@@ -128,7 +128,7 @@ export interface EndpointPostOptions<TKeys, TBody, TResult, TKeysBind = TKeys>
 	 * A function to create the url
 	 */
 	url: (keys: TKeysBind) => string;
-	headers?: { [keys: string]: (keys: TKeysBind) => string };
+	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
 	/**
 	 * A custom loader
 	 */
@@ -184,7 +184,7 @@ export interface EndpointPutOptions<TKeys, TBody, TResult, TKeysBind = TKeys>
 	 * A function to create the url
 	 */
 	url: (keys: TKeysBind) => string;
-	headers?: { [keys: string]: (keys: TKeysBind) => string };
+	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
 	/**
 	 * A custom loader
 	 */
@@ -240,7 +240,7 @@ export interface EndpointDeleteOptions<TKeys, TResult, TKeysBind = TKeys>
 	 * A function to create the url
 	 */
 	url: (keys: TKeysBind) => string;
-	headers?: { [keys: string]: (keys: TKeysBind) => string };
+	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
 	/**
 	 * A custom loader
 	 */

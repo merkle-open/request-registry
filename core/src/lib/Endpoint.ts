@@ -60,7 +60,7 @@ export interface EndpointOptions<TKeys, TBody, TResult, TKeysBind = TKeys> {
 	 * A function to create the url
 	 */
 	url: (keys: TKeysBind) => string;
-	headers?: { [keys: string]: (keys: TKeysBind) => string };
+	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
 	/**
 	 * A custom loader
 	 */

@@ -145,10 +145,11 @@ The `headers` option allows to customize request headers.
 const userLoader = createGetEndpoint({
     url: keys => `http://example.com/user/${keys.id}`,
     headers: {
-        keys => { "Authorization": `Bearer ${keys.token}` }
+        Authorization: keys => `Bearer ${keys.token}`,
+        contentType: "application/json"
     }
 });
-userLoader({id: 9, token: 'YXRvYmF0b2JhdG9i'})
+userLoader({ id: 9, token: "YXRvYmF0b2JhdG9i" });
 ```
 
 ## Custom Loaders
