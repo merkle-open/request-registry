@@ -10,7 +10,7 @@ export { ERROR_EMITTER } from "./lib/errorHandler";
 export type AjaxError = AjaxErrorType;
 
 /** Default Headers for POST and PUT requests */
-const defaultSendHeaders = { "Content-Type": "application/json" };
+const defaultSendHeaders = { "Content-Type": "application/json" } as const;
 
 // GET Options
 export interface EndpointGetOptions<TKeys, TResult, TKeysBind = TKeys>
