@@ -1,10 +1,37 @@
-node_modules
-*.log
+# OS
 .DS_Store
-node_modules
+Thumbs.db
+
+# IDE
+_.*
+.project
+.idea
+/*.iml
+.vscode
+!*.cache
+.cache
+!*.settings
+.settings
+!*.config
+.config
+.buildpath
+.metadata
+.tmp*
+*.prefs
+.deployables
+atlassian-ide-plugin.xml
+
+# Node
+**/node_modules
+**/npm-debug.log
+**/lerna-debug.log
+
+# Build
+**/dist
+**/coverage
+
+# Project
+*.log
 .rts2_cache_cjs
 .rts2_cache_es
 .rts2_cache_umd
-dist
-.cache
-coverage
