@@ -44,11 +44,12 @@ type Body = {
 type Output = {
     userId: string;
 };
-const userEndpoint = createPostEndpoint<Input, Body, Output>({
+const updateUserEndpoint = createPostEndpoint<Input, Body, Output>({
     url: keys => `http://example.com/user/${keys.id}`
 });
 
-userEndpoint({ id: "4" }).then(data => console.log(data.firstName));
+updateUserEndpoint({ id: "4" }, {firstName: 'Alex', lastName 'Doe', address: 'Earth'})
+    .then(data => console.log(data.userId));
 ```
 
 A PUT request would look similair:
@@ -69,11 +70,12 @@ type Body = {
 type Output = {
     userId: string;
 };
-const userEndpoint = createPutEndpoint<Input, Body, Output>({
+const putUserEndpoint = createPutEndpoint<Input, Body, Output>({
     url: keys => `http://example.com/user/${keys.id}`
 });
 
-userEndpoint({ id: "4" }).then(data => console.log(data.userId));
+putUserEndpoint({ id: "4" }, {firstName: 'Alex', lastName 'Doe', address: 'Earth'})
+    .then(data => console.log(data.userId));
 ```
 
 And a DELETE request would not need a body type, just like the GET request:
