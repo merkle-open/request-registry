@@ -135,6 +135,20 @@ const userLoader = createGetEndpoint({
 });
 ```
 
+## Custom Headers
+
+The `headers` option allows to customize request headers.
+
+```ts
+const userLoader = createGetEndpoint({
+    url: keys => `http://example.com/user/${keys.id}`,
+    headers: {
+        keys => { "Authorization": `Bearer ${keys.token}` }
+    }
+});
+userLoader({id: 9, token: 'YXRvYmF0b2JhdG9i'})
+```
+
 ## Custom Loaders
 
 If you wish, you can also override the default request-registry loader. By default it executes a request, using a fetch polyfill, and returns the request promise.
@@ -153,6 +167,46 @@ const userEndpoint = createGetEndpoint<Input, Output>({
 });
 userEndpoint.loader = () => Promise.resolve({ name: "I am a custom loader!" });
 userEndpoint({ id: "4" }).then(data => console.log(data.name));
+```
+
+## Success handling
+
+The `afterSuccess` options allows to add a generic success handling for an endpoint.
+
+```ts
+type Input = {
+    id: string;
+};
+type Output = {
+    name: string;
+};
+
+const userEndpoint = createGetEndpoint<Input, Output>({
+    url: keys => `http://example.com/user/${keys.id}`
+    afterSuccess: (result) => {
+        console.log("Load data", result);
+    }
+});
+```
+
+## Error handling
+
+The `afterError` options allows to add a generic error reporting for an endpoint.
+
+```ts
+type Input = {
+    id: string;
+};
+type Output = {
+    name: string;
+};
+
+const userEndpoint = createGetEndpoint<Input, Output>({
+    url: keys => `http://example.com/user/${keys.id}`
+    afterError: (error) => {
+        console.error("Request failed", error);
+    }
+});
 ```
 
 ## License
