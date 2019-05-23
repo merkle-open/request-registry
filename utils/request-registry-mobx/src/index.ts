@@ -3,38 +3,38 @@
 //
 import { EndpointGetFunction } from 'request-registry';
 import {
-  onBecomeObserved,
-  onBecomeUnobserved,
-  observable,
-  decorate,
-  computed,
-  action,
+	onBecomeObserved,
+	onBecomeUnobserved,
+	observable,
+	decorate,
+	computed,
+	action,
 } from 'mobx';
 
 /* istanbul ignore next */
 const noop = () => {};
 
 type EndpointKeys<
-  TEndpointGetFunction
+	TEndpointGetFunction
 > = TEndpointGetFunction extends EndpointGetFunction<infer TKeys, any>
-  ? TKeys
-  : never;
+	? TKeys
+	: never;
 type EndpointResult<
-  TEndpointGetFunction
+	TEndpointGetFunction
 > = TEndpointGetFunction extends EndpointGetFunction<any, infer TResult>
-  ? TResult
-  : never;
+	? TResult
+	: never;
 
 type EndpointState<TResult> =
-  | { busy: true; value: undefined; state: 'LOADING'; hasData: false }
-  | { busy: false; value: undefined; state: 'ERROR'; hasData: false }
-  | { busy: true; value: TResult; state: 'UPDATING'; hasData: true }
-  | { busy: false; value: TResult; state: 'DONE'; hasData: true };
+	| { busy: true; value: undefined; state: 'LOADING'; hasData: false }
+	| { busy: false; value: undefined; state: 'ERROR'; hasData: false }
+	| { busy: true; value: TResult; state: 'UPDATING'; hasData: true }
+	| { busy: false; value: TResult; state: 'DONE'; hasData: true };
 
 export type ObservableEndpoint<
-  TEndpoint extends EndpointGetFunction<any, any>
+	TEndpoint extends EndpointGetFunction<any, any>
 > = {
-  setKeys: (keys: EndpointKeys<TEndpoint>) => void;
+	setKeys: (keys: EndpointKeys<TEndpoint>) => void;
 } & EndpointState<EndpointResult<TEndpoint>>;
 
 /**
@@ -43,186 +43,189 @@ export type ObservableEndpoint<
  * endpoint is invalidated.
  */
 export function createObservableEndpoint<
-  TEndpoint extends EndpointGetFunction<any, any>
+	TEndpoint extends EndpointGetFunction<any, any>
 >(endpoint: TEndpoint, keys?: EndpointKeys<TEndpoint>) {
-  type TKeys = EndpointKeys<TEndpoint>;
-  const mobxEndpoint = new MobxEndpoint(endpoint, keys);
-  return Object.create(
-    {
-      /** Allow to set new request parameters */
-      setKeys: (keys: TKeys) => mobxEndpoint.setKeys(keys),
-    },
-    {
-      /** The observable ajax response result - Will be `undefined` before the first request finished */
-      value: { get: () => mobxEndpoint.state.value, set: noop },
-      /** The observable busy state - Will be `true` while an ajax request is running */
-      busy: { get: () => mobxEndpoint.state.busy, set: noop },
-      /** The observable state - Will be `"LOADING" | "UPDATING" | "LOAD" | "ERROR"` */
-      state: { get: () => mobxEndpoint.state.state, set: noop },
-      /** Wether the endpoint has Data` */
-      hasData: { get: () => mobxEndpoint.state.value !== undefined, set: noop },
-    }
-  ) as ObservableEndpoint<TEndpoint>;
+	type TKeys = EndpointKeys<TEndpoint>;
+	const mobxEndpoint = new MobxEndpoint(endpoint, keys);
+	return Object.create(
+		{
+			/** Allow to set new request parameters */
+			setKeys: (keys: TKeys) => mobxEndpoint.setKeys(keys),
+		},
+		{
+			/** The observable ajax response result - Will be `undefined` before the first request finished */
+			value: { get: () => mobxEndpoint.state.value, set: noop },
+			/** The observable busy state - Will be `true` while an ajax request is running */
+			busy: { get: () => mobxEndpoint.state.busy, set: noop },
+			/** The observable state - Will be `"LOADING" | "UPDATING" | "LOAD" | "ERROR"` */
+			state: { get: () => mobxEndpoint.state.state, set: noop },
+			/** Wether the endpoint has Data` */
+			hasData: {
+				get: () => mobxEndpoint.state.value !== undefined,
+				set: noop,
+			},
+		}
+	) as ObservableEndpoint<TEndpoint>;
 }
 
 class MobxEndpoint<
-  TKeys extends EndpointKeys<TEndpoint>,
-  TResult extends EndpointResult<TEndpoint>,
-  TEndpoint extends EndpointGetFunction<any, any>
+	TKeys extends EndpointKeys<TEndpoint>,
+	TResult extends EndpointResult<TEndpoint>,
+	TEndpoint extends EndpointGetFunction<any, any>
 > {
-  /** The original request-registry endpoint reference */
-  endpoint: TEndpoint;
-  /** Request parameters */
-  keys?: TKeys;
-  /** Holds all cleanup functions which should be called 
+	/** The original request-registry endpoint reference */
+	endpoint: TEndpoint;
+	/** Request parameters */
+	keys?: TKeys;
+	/** Holds all cleanup functions which should be called 
       once this class becomes unobserved */
-  disposables = [] as Array<() => any>;
-  /** The cacheKey for the latest keys to execute the endpoint
+	disposables = [] as Array<() => any>;
+	/** The cacheKey for the latest keys to execute the endpoint
       only if the request parameters have changed */
-  _cacheKey?: string;
-  /** The ajax result */
-  _value?: TResult;
-  /** The ajax error */
-  _error?: any;
-  /** The ajax promise */
-  _valuePromise?: Promise<any>;
-  /** Will be true as long as an ajax request is running */
-  busy: boolean = false;
+	_cacheKey?: string;
+	/** The ajax result */
+	_value?: TResult;
+	/** The ajax error */
+	_error?: any;
+	/** The ajax promise */
+	_valuePromise?: Promise<any>;
+	/** Will be true as long as an ajax request is running */
+	busy: boolean = false;
 
-  constructor(endpoint: TEndpoint, keys?: TKeys) {
-    this.keys = keys;
-    this.endpoint = endpoint;
-    // Track the observe state of the computed this.state
-    // to manage the endpoint keepInCache state
-    // and to refresh the endpoint in case of a
-    // cache invalidation
-    onBecomeObserved(this, 'state', () => {
-      this.watchEndpoint();
-    });
-    onBecomeUnobserved(this, 'state', () => {
-      this.dispose();
-    });
-  }
+	constructor(endpoint: TEndpoint, keys?: TKeys) {
+		this.keys = keys;
+		this.endpoint = endpoint;
+		// Track the observe state of the computed this.state
+		// to manage the endpoint keepInCache state
+		// and to refresh the endpoint in case of a
+		// cache invalidation
+		onBecomeObserved(this, 'state', () => {
+			this.watchEndpoint();
+		});
+		onBecomeUnobserved(this, 'state', () => {
+			this.dispose();
+		});
+	}
 
-  /** Update get request parameters */
-  setKeys(keys: TKeys) {
-    this.keys = keys;
-  }
+	/** Update get request parameters */
+	setKeys(keys: TKeys) {
+		this.keys = keys;
+	}
 
-  /** Execute the endpoint again if the cache of the endpoint is invalidated */
-  watchEndpoint() {
-    // Make sure that the garbage collector does not clean up the endpoint result:
-    this.disposables.push(this.endpoint.keepInCache(this.keys));
-    // If the cache is cleared execute the endpoint again
-    this.disposables.push(
-      this.endpoint.on('cacheClear', () => {
-        if (this.keys === undefined) {
-          return;
-        }
-        this.busy = true;
-        return this.executeEndpoint();
-      })
-    );
-  }
+	/** Execute the endpoint again if the cache of the endpoint is invalidated */
+	watchEndpoint() {
+		// Make sure that the garbage collector does not clean up the endpoint result:
+		this.disposables.push(this.endpoint.keepInCache(this.keys));
+		// If the cache is cleared execute the endpoint again
+		this.disposables.push(
+			this.endpoint.on('cacheClear', () => {
+				if (this.keys === undefined) {
+					return;
+				}
+				this.busy = true;
+				return this.executeEndpoint();
+			})
+		);
+	}
 
-  /** Unbind all event handlers */
-  dispose() {
-    this.disposables.forEach(disposeFunction => disposeFunction());
-  }
+	/** Unbind all event handlers */
+	dispose() {
+		this.disposables.forEach(disposeFunction => disposeFunction());
+	}
 
-  /** Handle ajax response */
-  receiveData(result: TResult) {
-    this._value = result as TResult;
-    this.busy = false;
-  }
+	/** Handle ajax response */
+	receiveData(result: TResult) {
+		this._value = result as TResult;
+		this.busy = false;
+	}
 
-  receiveError(err: any) {
-    this._error = err;
-  }
+	receiveError(err: any) {
+		this._error = err;
+	}
 
-  /** The Observable State */
-  get state(): EndpointState<TResult> {
-    // Check if value has to be recalculated
-    const currentCacheKey = this.keys
-      ? this.endpoint.getCacheKey(this.keys)
-      : undefined;
-    if (currentCacheKey && this._cacheKey !== currentCacheKey) {
-      this._cacheKey = currentCacheKey;
-      this.busy = true;
-      this.dispose();
-      this.watchEndpoint();
-      this.executeEndpoint();
-    }
-    // Return value from cache
-    const busy = this.busy;
-    const value = this._value;
-    const error = this._error;
-    const hasData = value !== undefined;
-    if (error && !busy) {
-      return {
-        state: 'ERROR',
-        value: undefined,
-        hasData: false,
-        busy: busy,
-      };
-    }
-    // If the endpoint is fully load
-    // and no update is in progress
-    if (!busy && value) {
-      return {
-        state: 'DONE',
-        value,
-        hasData: hasData as true,
-        busy: false,
-      };
-    }
-    // If the endpoint is fully load
-    // but an update is in progress
-    if (busy && value) {
-      return {
-        state: 'UPDATING',
-        value,
-        hasData: hasData as true,
-        busy: true,
-      };
-    }
-    // If the endpoint was never load
-    return {
-      state: 'LOADING',
-      busy: true,
-      hasData: hasData as false,
-      value: undefined,
-    };
-  }
+	/** The Observable State */
+	get state(): EndpointState<TResult> {
+		// Check if value has to be recalculated
+		const currentCacheKey = this.keys
+			? this.endpoint.getCacheKey(this.keys)
+			: undefined;
+		if (currentCacheKey && this._cacheKey !== currentCacheKey) {
+			this._cacheKey = currentCacheKey;
+			this.busy = true;
+			this.dispose();
+			this.watchEndpoint();
+			this.executeEndpoint();
+		}
+		// Return value from cache
+		const busy = this.busy;
+		const value = this._value;
+		const error = this._error;
+		const hasData = value !== undefined;
+		if (error && !busy) {
+			return {
+				state: 'ERROR',
+				value: undefined,
+				hasData: false,
+				busy: busy,
+			};
+		}
+		// If the endpoint is fully load
+		// and no update is in progress
+		if (!busy && value) {
+			return {
+				state: 'DONE',
+				value,
+				hasData: hasData as true,
+				busy: false,
+			};
+		}
+		// If the endpoint is fully load
+		// but an update is in progress
+		if (busy && value) {
+			return {
+				state: 'UPDATING',
+				value,
+				hasData: hasData as true,
+				busy: true,
+			};
+		}
+		// If the endpoint was never load
+		return {
+			state: 'LOADING',
+			busy: true,
+			hasData: hasData as false,
+			value: undefined,
+		};
+	}
 
-  executeEndpoint() {
-    // Store the ajax promise to track if this is the latest promise
-    const currentPromise = (this._valuePromise = this.endpoint(this.keys).then(
-      result => {
-        // If the keys are not up to date anymore ignore the result
-        if (currentPromise === this._valuePromise) {
-          this.receiveData(result);
-        }
-      }
-    ));
-    currentPromise.catch(error => {
-      // If the keys are not up to date anymore ignore the result
-      if (currentPromise === this._valuePromise) {
-        this.receiveError(error);
-      }
-      return currentPromise;
-    });
-    return currentPromise;
-  }
+	executeEndpoint() {
+		// Store the ajax promise to track if this is the latest promise
+		const currentPromise = (this._valuePromise = this.endpoint(
+			this.keys
+		).then(result => {
+			// If the keys are not up to date anymore ignore the result
+			if (currentPromise === this._valuePromise) {
+				this.receiveData(result);
+			}
+		}));
+		currentPromise.catch(error => {
+			// If the keys are not up to date anymore ignore the result
+			if (currentPromise === this._valuePromise) {
+				this.receiveError(error);
+			}
+			return currentPromise;
+		});
+		return currentPromise;
+	}
 }
 
 decorate(MobxEndpoint, {
-  receiveData: action,
-  receiveError: action,
-  keys: observable,
-  busy: observable,
-  _value: observable,
-  _error: observable,
-  setKeys: action,
-  state: computed,
+	receiveData: action,
+	receiveError: action,
+	keys: observable,
+	busy: observable,
+	_value: observable,
+	_error: observable,
+	setKeys: action,
+	state: computed,
 });
