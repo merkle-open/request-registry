@@ -163,7 +163,14 @@ export function createEndpoint<
 				cacheKey = getCacheKey(url, headers);
 				// Check if cache is still valid
 				const skipCache =
-					cacheValidator && cacheValidator(api as any) === false;
+					cacheValidator &&
+					cacheValidator(
+						url.value,
+						headers.value,
+						cacheKey,
+						cache,
+						api as any
+					) === false;
 				if (cacheKey && !skipCache) {
 					const ajaxResultFromCache = cache!.get(cacheKey);
 					if (ajaxResultFromCache) {

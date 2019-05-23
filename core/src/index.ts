@@ -32,9 +32,12 @@ export interface EndpointGetOptions<TKeys, TResult, TKeysBind = TKeys>
 	/**
 	 * A function which returns false if the cache is invalid
 	 *
-	 * TODO: Change to cacheValidator(api, cacheKey, keys) ?
 	 */
 	cacheValidator?: (
+		url: string,
+		headers: { [keys: string]: string },
+		cacheKey: string,
+		cache: Cache<TResult>,
 		api: EndpointWithoutRequestBodyFunction<TKeysBind, TResult, "GET">
 	) => boolean;
 	/**

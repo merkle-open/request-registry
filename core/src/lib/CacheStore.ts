@@ -1,7 +1,4 @@
-import {
-	EndpointHeadersTemplate,
-	EndpointWithoutRequestBodyFunction
-} from "./Endpoint";
+import { EndpointHeadersTemplate } from "./Endpoint";
 import { Emitter } from "./Emitter";
 
 export interface Cache<TResult> {
@@ -73,11 +70,13 @@ export interface EndpointCacheOptions<
 	cache?: Cache<TResult>;
 	/**
 	 * A function which returns false if the cache is invalid
-	 *
-	 * TODO: Change to cacheValidator(api, cacheKey, keys) ?
 	 */
 	cacheValidator?: (
-		api: EndpointWithoutRequestBodyFunction<TKeysBind, TResult, "GET">
+		url: string,
+		headers: { [keys: string]: string },
+		cacheKey: string,
+		cache: Cache<TResult>,
+		api: any
 	) => boolean;
 }
 
