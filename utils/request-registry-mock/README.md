@@ -25,16 +25,53 @@ console.log(await userEndpoint()); // Will return the mocked value `{name: 'Joe'
 
 The `createMockEndpoint` allows to create a mock controller for an endpoint
 
-Usage:
+#### simple usage:
 
 ```js
 const userJoeMock = createMockEndpoint(getUserName, async () => ({
-  name: 'Joe',
+    name: 'Joe',
 }));
 // Activate mock:
 userJoeMock.activate();
 // Deactivate mock:
 userJoeMock.clear();
+```
+
+#### advanced usage:
+
+A mock can also be based on the request information.
+
+```js
+// Wait 400ms before responding with the mock result:
+const delay = 400;
+
+const userDynamicMock = createMockEndpoint(
+    getUserName,
+    async (keys, url, headers) => {
+        // Respond with different data depending on the url:
+        if (url === '/user/1') {
+            return {
+                name: 'Alex',
+            };
+        }
+        return {
+            name: 'Joe',
+        };
+    },
+    delay
+);
+```
+
+### mockEndpointOnce
+
+The `mockEndpointOnce` is similar to `mockEndpoint` however it will unbind after the first response.
+
+```js
+const userEndpoint = createGetEndpoint({ url: () => '/user' });
+mockEndpointOnce(getUserName, async () => ({ name: 'Joe' }));
+console.log(await userEndpoint()); // Will return the mocked value `{name: 'Joe'}`
+userEndpoint.clearCache();
+console.log(await userEndpoint()); // Will return the value of an unmocked call`
 ```
 
 ### activateMocks
@@ -45,7 +82,7 @@ Usage:
 
 ```js
 const userJoeMock = createMockEndpoint(getUserName, async () => ({
-  name: 'Joe',
+    name: 'Joe',
 }));
 const userAgeMock = createMockEndpoint(getUserAge, async () => ({ age: 99 }));
 activateMocks(userJoeMock, userAgeMock);
@@ -70,10 +107,14 @@ Usage:
 ```js
 const userAgeMock = createMockEndpoint(getAge, async () => ({ age: 99 }));
 const userNameMock = createMockEndpoint(getName, async () => ({
-  name: 'Alex',
+    name: 'Alex',
 }));
 const mockGroup = groupMockEndpoints(userAgeMock, userNameMock);
 mockGroup.activate();
 ```
 
 It is even possible to group multiple groups into one.
+
+## License
+
+[MIT license](http://opensource.org/licenses/MIT)

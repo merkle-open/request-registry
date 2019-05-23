@@ -4,9 +4,9 @@ RequestRegistryReact is a helper to use RequestRegistry ajax endpoints inside re
 
 Features:
 
-- **lazy loading:** ajax requests will be done only if a react component using the endpoint is mounted
-- **auto refresh:** if a cache gets outdated and components are still on the page they will request a new version and render again
-- **garbage collection:** once all React components using endpoints have been unmounted the cache will be freed
+-   **lazy loading:** ajax requests will be done only if a react component using the endpoint is mounted
+-   **auto refresh:** if a cache gets outdated and components are still on the page they will request a new version and render again
+-   **garbage collection:** once all React components using endpoints have been unmounted the cache will be freed
 
 ## Getting started
 
@@ -22,12 +22,12 @@ The useGetEndPoint can be used to load ajax data and handling the loading state 
 
 ```jsx
 const UserDetails = props => {
-  const endpointState = useGetEndPoint(userEndpoint, { id: props.id });
-  if (endpointState.state !== "DONE") {
-    return <div>Loading...</div>;
-  }
-  const { name } = endpointState.value;
-  return <div>{name}</div>;
+    const endpointState = useGetEndPoint(userEndpoint, { id: props.id });
+    if (endpointState.state !== "DONE") {
+        return <div>Loading...</div>;
+    }
+    const { name } = endpointState.value;
+    return <div>{name}</div>;
 };
 ```
 
@@ -40,18 +40,18 @@ ajax data:
 
 ```jsx
 const UserDetails = props => {
-  const { name } = useGetEndPointSuspendable(userEndpoint, { id: props.id });
-  return <div>{name}</div>;
+    const { name } = useGetEndPointSuspendable(userEndpoint, { id: props.id });
+    return <div>{name}</div>;
 };
 ```
 
 ```jsx
 const UserDetailsContainer = () => {
-  return (
-    <Suspense fallback={"Loading..."}>
-      <UserDetails id="4" />
-    </Suspense>
-  );
+    return (
+        <Suspense fallback={"Loading..."}>
+            <UserDetails id="4" />
+        </Suspense>
+    );
 };
 ```
 
@@ -59,7 +59,11 @@ const UserDetailsContainer = () => {
 
 The return value of `useGetEndPoint` can have the following states:
 
-- `state: 'LOADING'`: The endpoint is executed the first time or after an error occured.
-- `state: 'UPDATING'`: The endpoint is executed altough data have already been loaded before.
-- `state: 'DONE'`: The endpoint is done executing.
-- `state: 'ERROR'`: The endpoint is done executing but received an error
+-   `state: 'LOADING'`: The endpoint is executed the first time or after an error occured.
+-   `state: 'UPDATING'`: The endpoint is executed altough data have already been loaded before.
+-   `state: 'DONE'`: The endpoint is done executing.
+-   `state: 'ERROR'`: The endpoint is done executing but received an error
+
+## License
+
+[MIT license](http://opensource.org/licenses/MIT)
