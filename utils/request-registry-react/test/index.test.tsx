@@ -6,7 +6,7 @@ import {
 	unmockAllEndpoints,
 	mockEndpointOnce
 } from "request-registry-mock";
-import { render, wait } from "react-testing-library";
+import { render, wait } from "@testing-library/react";
 
 afterAll(() => {
 	unmockAllEndpoints();

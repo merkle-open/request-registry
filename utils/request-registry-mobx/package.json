@@ -31,9 +31,9 @@
     "pkg-ok": "2.3.1",
     "request-registry": "^0.2.0",
     "request-registry-mock": "^0.2.0",
-    "tsdx": "0.5.11",
+    "tsdx": "0.6.1",
     "tslib": "1.9.3",
-    "typescript": "3.4.5"
+    "typescript": "3.5.1"
   },
   "jest": {
     "coverageReporters": [

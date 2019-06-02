@@ -13,7 +13,8 @@
     "\n// Package Management": "",
     "upgrade": "lerna exec --concurrency 1 -- npx npm-check-updates -u",
     "clean": "lerna exec --concurrency 1 -- npx rimraf node_modules .rts* dist coverage .cache; npx rimraf node_modules",
-    "commit": "git-cz"
+    "commit": "git-cz",
+    "release": "lerna publish --conventional-commits --no-commit-hooks"
   },
   "author": "Jan Nicklas",
   "license": "MIT",
