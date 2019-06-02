@@ -1,6 +1,6 @@
 {
   "name": "request-registry-react",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "dist/index.js",
   "umd:main": "dist/request-registry-react.umd.production.js",
   "module": "dist/request-registry-react.es.production.js",
@@ -26,8 +26,8 @@
     "react": "16.9.0-alpha.0",
     "react-dom": "16.9.0-alpha.0",
     "react-testing-library": "7.0.1",
-    "request-registry": "*",
-    "request-registry-mock": "*",
+    "request-registry": "^0.2.0",
+    "request-registry-mock": "^0.2.0",
     "tsdx": "0.5.11",
     "tslib": "1.9.3",
     "typescript": "3.4.5"

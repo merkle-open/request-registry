@@ -1,6 +1,6 @@
 {
   "name": "request-registry-mobx",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "dist/index.js",
   "umd:main": "dist/request-registry-mobx.umd.production.js",
   "module": "dist/request-registry-mobx.es.production.js",
@@ -15,9 +15,9 @@
     "test": "tsdx test"
   },
   "peerDependencies": {
+    "mobx": ">=4",
     "react": ">=16",
-    "request-registry": "*",
-    "mobx": ">=4"
+    "request-registry": "*"
   },
   "prettier": {
     "printWidth": 80,
@@ -29,8 +29,8 @@
     "@types/jest": "24.0.13",
     "mobx": "5.9.4",
     "pkg-ok": "2.3.1",
-    "request-registry": "*",
-    "request-registry-mock": "*",
+    "request-registry": "^0.2.0",
+    "request-registry-mock": "^0.2.0",
     "tsdx": "0.5.11",
     "tslib": "1.9.3",
     "typescript": "3.4.5"
