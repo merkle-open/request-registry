@@ -61,7 +61,7 @@ export function createObservableEndpoint<
 			state: { get: () => mobxEndpoint.state.state, set: noop },
 			/** Wether the endpoint has data */
 			hasData: {
-				get: () => mobxEndpoint.value !== undefined,
+				get: () => mobxEndpoint.state.hasData,
 				set: noop,
 			},
 		}
@@ -147,10 +147,14 @@ class MobxEndpoint<
 
 	receiveError(err: any) {
 		this._error = err;
+		this.busy = false;
 	}
 
 	/** The Observable State */
 	get state(): EndpointState<TResult> {
+		const busy = this.busy;
+		const value = this.value;
+		const error = this._error;
 		// Check if value has to be recalculated
 		const currentCacheKey = this.keys
 			? this.endpoint.getCacheKey(this.keys)
@@ -165,9 +169,6 @@ class MobxEndpoint<
 			this.executeEndpoint();
 		}
 		// Return value from cache
-		const busy = this.busy;
-		const value = this.value;
-		const error = this._error;
 		const hasData = value !== undefined;
 		if (error && !busy) {
 			return {
