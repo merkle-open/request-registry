@@ -11,7 +11,7 @@
     "test": "lerna run test",
     "size": "lerna run size",
     "\n// Package Management": "",
-    "upgrade": "lerna exec --concurrency 1 -- npx npm-check-updates -u",
+    "upgrade": "lerna exec --concurrency 1 -- npx npm-check-updates -u -x mobx",
     "clean": "lerna exec --concurrency 1 -- npx rimraf node_modules .rts* dist coverage .cache; npx rimraf node_modules",
     "commit": "git-cz",
     "release": "lerna publish --conventional-commits --no-commit-hooks"
@@ -25,12 +25,12 @@
   },
   "devDependencies": {
     "@namics/prettier-config": "0.2.0",
-    "commitizen": "3.0.4",
+    "commitizen": "3.1.1",
     "cz-conventional-changelog": "2.1.0",
-    "lerna": "^3.13.4",
-    "husky": "2.2.0",
-    "prettier": "1.17.0",
-    "pretty-quick": "1.10.0"
+    "lerna": "^3.14.1",
+    "husky": "2.3.0",
+    "prettier": "1.17.1",
+    "pretty-quick": "1.11.0"
   },
   "config": {
     "commitizen": {
