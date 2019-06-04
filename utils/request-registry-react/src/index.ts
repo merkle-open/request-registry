@@ -74,7 +74,7 @@ export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 		// Track this hook as endpoint consumer
 		// once all consumers are gone the memory will be freed
 		return endpoint.keepInCache(latestKeys.current);
-	}, [endpoint, ...turnObjectInDiffableArray(keys)]);
+	}, [endpoint, endpoint.getCacheKey(keys)]);
 	return endpointState;
 }
 
@@ -127,18 +127,6 @@ export function useGetEndPointSuspendable<
 		throw suspenseCacheEntry.promise;
 	}
 	return endpointData.value;
-}
-
-/**
- * React memo/effects needs an array for propper diffing
- * This function turns a flat object into an array
- * E.g. {'a':1, 'b': 2} -> ['a', 'b', 1, 2]
- */
-function turnObjectInDiffableArray<TObject extends {}>(
-	obj: TObject
-): Array<unknown> {
-	const keys = Object.keys(obj) as Array<keyof TObject>;
-	return keys.concat(keys.map(key => obj[key]) as any);
 }
 
 type EndpointState<TResult> =
