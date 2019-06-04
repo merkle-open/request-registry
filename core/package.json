@@ -1,6 +1,6 @@
 {
   "name": "request-registry",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "license": "MIT",
   "description": "Type safe promise based HTTP request registry for the browser",
   "author": "Jan Nicklas",

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.3.0](https://github.com/namics/request-registry/compare/v0.2.1...v0.3.0) (2019-06-04)
+
+
+### Features
+
+* **request-registry-mobx:** Allow to set an initial value ([080c69c](https://github.com/namics/request-registry/commit/080c69c))
+
+
+
+
+
 ## [0.2.1](https://github.com/namics/request-registry/compare/v0.2.0...v0.2.1) (2019-06-04)
 
 
