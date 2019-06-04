@@ -84,7 +84,7 @@ class MobxEndpoint<
       only if the request parameters have changed */
 	_cacheKey?: string;
 	/** The ajax result */
-	value?: TResult;
+	value: TResult | undefined;
 	/** The ajax error */
 	_error?: any;
 	/** The ajax promise */
@@ -95,8 +95,9 @@ class MobxEndpoint<
 	 */
 	busy: boolean = true;
 
-	constructor(endpoint: TEndpoint, keys?: TKeys) {
+	constructor(endpoint: TEndpoint, keys?: TKeys, initialValue?: TResult) {
 		this.keys = keys;
+		this.value = initialValue;
 		this.endpoint = endpoint;
 		// Track the observe state of the observable this.value
 		// which is used by the computed this.state
