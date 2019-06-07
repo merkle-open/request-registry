@@ -26,7 +26,7 @@ export interface CacheStore<TKeys, TResult> {
 	 * The time of the first write into the cache
 	 * will be reset on clearCache
 	 */
-	state: { cacheCreation?: Date };
+	_state: { _cacheCreation?: Date };
 	/**
 	 * Helper to prevent memory leaks
 	 *
@@ -78,9 +78,11 @@ export interface EndpointCacheOptions<
 		cache: Cache<TResult>,
 		api: any
 	) => boolean;
+	/** A custom cacheKey implementation */
+	cacheKey?: (keys: TKeys) => string;
 }
 
-export type Cachable<T = string> = { cacheKey: string; value: T };
+export type Cachable<T = string> = { _cacheKey: string; _value: T };
 
 /**
  * The createCacheStore provides util functions and events
@@ -94,16 +96,17 @@ export function createCacheStore<
 	url: (keys: TKeys) => string,
 	headerTemplate: THeader,
 	headerKeys: Array<keyof THeader>,
-	cacheMap?: Cache<TResult>
+	cacheMap?: Cache<TResult>,
+	cacheKeyGenerator?: (keys: TKeys, baseCacheKey: string) => string
 ): CacheStore<TKeys, TResult> {
 	/** Helper map to track which CacheKeys can be garbage collected */
 	const keepInCacheTracker = new Map<
 		/** CacheKey */ string,
 		{
 			/** The amount of cache consumers for the given CacheKey */
-			count: number;
+			_count: number;
 			/** The setTimeout to cleanup the given cache once all consumers are gone */
-			timeout?: number;
+			_timeout?: number;
 		}
 	>();
 	const cache: Cache<TResult> =
@@ -113,17 +116,12 @@ export function createCacheStore<
 	}>();
 
 	const getUrlCacheKey = (keys: TKeys): string =>
-		getCacheKey(
-			getUrl(keys, url),
-			getHeaders(keys, headerTemplate, headerKeys)
-		);
+		getCacheKey(url(keys), getHeaders(keys, headerTemplate, headerKeys));
 
-	const cacheState: { cacheCreation?: Date } = {};
-	/** Clears all cached requests */
-	const createCacheStore: {
+	const cacheState: { _cacheCreation?: Date } = {};
+	const cacheStoreController: {
 		cache: Cache<TResult>;
-		state: {};
-		cacheCreation?: Date;
+		_state: {};
 		getCacheKey: (keys: TKeys) => string;
 		keepInCache: (keys: TKeys, timeout?: number) => () => void;
 		clearCache: () => Promise<any[]>;
@@ -139,12 +137,15 @@ export function createCacheStore<
 		) => void;
 	} = {
 		cache,
-		state: cacheState,
-		getCacheKey: getUrlCacheKey,
+		_state: cacheState,
+		getCacheKey: cacheKeyGenerator
+			? keys => cacheKeyGenerator(keys, getUrlCacheKey(keys))
+			: getUrlCacheKey,
 		clearCache: () => {
-			const previousCacheCreation = cacheState.cacheCreation;
+			const previousCacheCreation = cacheState._cacheCreation;
 			if (previousCacheCreation) {
-				cacheState.cacheCreation = undefined;
+				cacheState._cacheCreation = undefined;
+				keepInCacheTracker.clear();
 				cache.clear();
 				return Promise.all(
 					emitter.emit("cacheClear", previousCacheCreation)
@@ -152,10 +153,8 @@ export function createCacheStore<
 			}
 			return Promise.resolve([]);
 		},
-		on: ((event, callback) =>
-			emitter.on(event, callback)) as typeof emitter.on,
-		off: ((event, callback) =>
-			emitter.off(event, callback)) as typeof emitter.off,
+		on: emitter.on.bind(emitter),
+		off: emitter.off.bind(emitter),
 		/**
 		 * Helper to prevent memory leaks for cached components
 		 *
@@ -165,9 +164,9 @@ export function createCacheStore<
 		 */
 		keepInCache: (keys: TKeys, timeout?: number) => {
 			const cacheKey = getUrlCacheKey(keys);
-			const consumer = keepInCacheTracker.get(cacheKey) || { count: 0 };
-			consumer.count++;
-			clearTimeout(consumer.timeout);
+			const consumer = keepInCacheTracker.get(cacheKey) || { _count: 0 };
+			consumer._count++;
+			clearTimeout(consumer._timeout);
 			keepInCacheTracker.set(cacheKey, consumer);
 			let disposed = false;
 			// Return the release from cache function
@@ -176,37 +175,27 @@ export function createCacheStore<
 				const consumer = keepInCacheTracker.get(cacheKey);
 				// If this is the last consumer and it has not been disposed
 				// start the cleanup timer
-				if (!disposed && consumer && --consumer.count <= 0) {
+				if (!disposed && consumer && --consumer._count <= 0) {
 					disposed = true;
-					consumer.timeout = setTimeout(() => {
+					consumer._timeout = setTimeout(() => {
+						keepInCacheTracker.delete(cacheKey);
 						cache.delete(cacheKey);
 					}, timeout || 20000) as any;
 				}
 			};
 		}
 	};
-	return createCacheStore;
+	return cacheStoreController;
 }
 
 /**
  * Turns the cachable url and header into a cache key
  */
 export function getCacheKey(
-	url: Cachable,
+	url: string,
 	header: Cachable<{ [key: string]: string }>
 ): string {
-	return header.cacheKey + " - " + url.cacheKey;
-}
-
-/**
- * Get url for the given keys
- */
-export function getUrl<TKeys>(
-	keys: TKeys,
-	urlTemplate: (keys: TKeys) => string
-): Cachable {
-	const url = urlTemplate(keys);
-	return { cacheKey: url, value: url };
+	return header._cacheKey + " - " + url;
 }
 
 /**
@@ -233,7 +222,7 @@ export function getHeaders<
 		headers[headerKey as string] = header;
 	});
 	return {
-		cacheKey,
-		value: headers
+		_cacheKey: cacheKey,
+		_value: headers
 	};
 }

@@ -4,8 +4,20 @@ RequestRegistry is a generic utility (~1.5kb gziped) to be used as part of your 
 
 ## Getting started
 
-RequestRegistry works with vanilla javascript.  
-The optional build in typescript support will allow you to keep your data flow very maintainable.
+RequestRegistry works with vanilla javascript.
+
+```ts
+import { createGetEndpoint } from "request-registry";
+
+const userEndpoint = createGetEndpoint({
+    url: keys => `http://example.com/user/${keys.id}`
+});
+
+userEndpoint({ id: "4" }).then(data => console.log(data.firstName));
+```
+
+The optional build in typescript support will allow you to keep your data flow more maintainable
+as it allows you to understand which data has to be send to the backend and which data will be returned.
 
 ```ts
 import { createGetEndpoint } from "request-registry";
@@ -22,8 +34,9 @@ type Output = {
 const userEndpoint = createGetEndpoint<Input, Output>({
     url: keys => `http://example.com/user/${keys.id}`
 });
-
-userEndpoint({ id: "4" }).then(data => console.log(data.firstName));
+// The next lines will be fully typesafe without the need of adding any types
+const data = await userEndpoint({ id: "4" });
+console.log(data.firstName);
 ```
 
 All CRUD operations are supported, for example a POST request would look like this:
@@ -135,6 +148,22 @@ const userLoader = createGetEndpoint({
     url: keys => `http://example.com/user/${keys.id}`,
     cache: customCache
 });
+```
+
+## Connecting Caches
+
+Most of the time mutiation endpoints (POST / PUT / DELTE) influence the validity of data endpoints (GET).
+For example setting a users name should invalidate all caches including the old name.  
+RequestRegistry allows to define those relations for every endpoint using the `afterSuccess` hook:
+
+```ts
+const getUserName = createGetEndpoint({
+    url: keys => `http://example.com/user/${keys.id}/get`,
+})
+const setUserName = createPostEndpoint({
+    url: keys => `http://example.com/user/${keys.id}/update`,
+    afterSuccess: () => getUserName.clearCache();
+})
 ```
 
 ## Custom Headers

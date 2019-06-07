@@ -1,17 +1,10 @@
 import { errorHandler } from "./errorHandler";
 
 /**
- * The main load function
- */
-export function load(url: string, init?: RequestInit): Promise<Response> {
-	return fetch(url, init);
-}
-
-/**
  * The recurisve loader allows to retry requests
  */
 export function recursiveLoader(
-	loadFn: typeof load,
+	loadFn: typeof fetch,
 	url: string,
 	method: "POST" | "PUT" | "GET" | "DELETE",
 	headers: { [key: string]: string },

@@ -79,11 +79,6 @@ export interface EndpointGetFunction<TKeys extends {}, TResult extends unknown>
 	 */
 	getCacheKey: (keys: TKeys) => string;
 	/**
-	 * The time of the first write into the cache
-	 * will be reset on clearCache
-	 */
-	state: { cacheCreation?: Date };
-	/**
 	 * Helper to prevent memory leaks
 	 *
 	 * Returns a clear cache function for the given keys

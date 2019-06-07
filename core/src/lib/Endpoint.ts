@@ -1,12 +1,12 @@
-import { recursiveLoader, load } from "./ajax";
+import { recursiveLoader } from "./ajax";
 import {
+	Cache,
 	createCacheStore,
 	EndpointCacheOptions,
-	Cache,
-	getUrl,
-	getHeaders,
-	getCacheKey
+	getHeaders
 } from "./CacheStore";
+
+const noop = () => {};
 
 /**
  * Shared Endpoint Options
@@ -90,8 +90,7 @@ export type LoaderFunction<TKeys, TBody, TResult> = (
 	headers: { [key: string]: string },
 	body?: TBody
 ) => Promise<TResult>;
-function createLoader<TKeys, TBody, TResult>(
-	options: EndpointOptions<TKeys, TBody, TResult>,
+export function createLoader<TKeys, TBody, TResult>(
 	method: "POST" | "PUT" | "GET" | "DELETE"
 ): LoaderFunction<TKeys, TBody, TResult> {
 	return ((
@@ -102,7 +101,7 @@ function createLoader<TKeys, TBody, TResult>(
 	): Promise<TResult> => {
 		// Execute request
 		const ajaxReponsePromise = recursiveLoader(
-			load,
+			fetch,
 			url,
 			method,
 			headers,
@@ -124,13 +123,16 @@ export function createEndpoint<
 >(
 	method: TMethod,
 	options:
-		| EndpointOptions<TKeys, TBody, TResult> & { cacheRequest: false }
+		| EndpointOptions<TKeys, TBody, TResult> & {
+				cacheRequest: false;
+				cacheValidator: undefined;
+		  }
 		| EndpointOptions<TKeys, TBody, TResult> &
 				EndpointCacheOptions<TKeys, TBody, TResult>
 ) {
 	const loader =
 		(options.loader as LoaderFunction<TKeys, TBody, TResult> | undefined) ||
-		createLoader(options, method);
+		createLoader(method);
 	/** Some requests require special headers like auth tokens */
 	const headerTemplate = options.headers || {};
 	const headerKeys: Array<keyof typeof headerTemplate> = Object.keys(
@@ -142,36 +144,37 @@ export function createEndpoint<
 			? createCacheStore<TKeys, EndpointHeadersTemplate<TKeys>, TResult>(
 					options.url,
 					headerTemplate,
-					headerKeys
+					headerKeys,
+					options.cache,
+					options.cacheKey
 			  )
 			: undefined;
-	const cacheValidator =
-		"cacheValidator" in options && options.cacheValidator;
-	const cacheState = (cacheManager && cacheManager.state) || {};
+	const cacheValidator = options.cacheValidator || noop;
+	const cacheState = (cacheManager && cacheManager._state) || {};
 	/**
 	 * Data loader
 	 */
 	const api = Object.assign(
 		function transmitFunction(keys: TKeys, body?: TBody) {
-			const url = getUrl(keys, options.url);
+			const url = options.url(keys);
 			const headers = getHeaders(keys, headerTemplate, headerKeys);
 			// Try to return from cache
 			let cacheKey: string | undefined;
 			let cache: Cache<TResult> | undefined;
 			if (cacheManager) {
 				cache = cacheManager.cache;
-				cacheKey = getCacheKey(url, headers);
-				// Check if cache is still valid
-				const skipCache =
-					cacheValidator &&
+				cacheKey = cacheManager.getCacheKey(keys);
+				if (
+					// Skip the cache if the users cacheValidation function returns
+					// `false` explicitly
 					cacheValidator(
-						url.value,
-						headers.value,
+						url,
+						headers._value,
 						cacheKey,
 						cache,
 						api as any
-					) === false;
-				if (cacheKey && !skipCache) {
+					) !== false
+				) {
 					const ajaxResultFromCache = cache!.get(cacheKey);
 					if (ajaxResultFromCache) {
 						return ajaxResultFromCache;
@@ -181,29 +184,34 @@ export function createEndpoint<
 			// Execute request
 			const ajaxResultPromise = api.loader(
 				keys,
-				url.value,
-				headers.value,
+				url,
+				headers._value,
 				body
 			);
 			// Store in cache
 			if (cacheKey && cache) {
 				cache.set(cacheKey, ajaxResultPromise);
-				if (!cacheState.cacheCreation) {
-					cacheState.cacheCreation = new Date();
+				if (!cacheState._cacheCreation) {
+					cacheState._cacheCreation = new Date();
 				}
 			}
 			// Fire handlers
-			return ajaxResultPromise
-				.then(
-					ajaxResult =>
-						options.afterSuccess &&
-						options.afterSuccess(ajaxResult),
-					error => options.afterError && options.afterError(error)
-				)
-				.then(() => ajaxResultPromise);
+			return (
+				ajaxResultPromise
+					.then(
+						options.afterSuccess || noop,
+						options.afterError || noop
+					)
+					// Return the original values once the handlers are done
+					// this allows the handlers to be async but will still return
+					// the correct value or show the error stack trace
+					.then(() => ajaxResultPromise)
+			);
 		},
 		{
+			// Request method ("GET" | "POST" | "PUT" | "DELETE")
 			method: method,
+			// Mockable data loader
 			loader
 		},
 		cacheManager
