@@ -16,7 +16,6 @@
   },
   "peerDependencies": {
     "mobx": ">=4",
-    "react": ">=16",
     "request-registry": "*"
   },
   "prettier": {
