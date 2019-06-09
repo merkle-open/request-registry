@@ -111,6 +111,29 @@ const userEndpoint = createPutEndpoint<Input, Output>({
 userEndpoint({ id: "4" }).then(data => console.log(data.userId));
 ```
 
+## GraphQL
+
+Request registry is capable of sending and caching GraphQL requests:
+
+```ts
+import { createGraphQlEndpoint } from "request-registry";
+
+const query = `{
+  Movie(title: "Inception") {
+    releaseDate
+    actors {
+      name
+    }
+  }
+}`;
+const actorsEndpoint = createGraphQlEndpoint<{}, {}>({
+    url: keys => `http://example.com/user/${keys.id}`,
+    query: query
+});
+
+actorsEndpoint().then(graphQLResponse => console.log(graphQLResponse));
+```
+
 ## Caching
 
 Only GET operations will be cached.
