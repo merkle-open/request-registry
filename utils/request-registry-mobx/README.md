@@ -18,7 +18,7 @@ npm install --save request-registry registry-request-mobx
 
 ### createObservableEndpoint
 
-The useGetEndPoint can be used to load ajax data and handling the loading state in the same component:
+The `createObservableEndpoint` can be used to load ajax data and handling the loading state in the same component:
 
 ```js
 const observedUserEndpoint = createObservableEndpoint(userEndpoint, {
