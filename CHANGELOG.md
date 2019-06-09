@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.4.0](https://github.com/namics/request-registry/compare/v0.3.0...v0.4.0) (2019-06-09)
+
+
+### Bug Fixes
+
+* **request-registry-mobx:** Remove react peer dependency ([eeaa47e](https://github.com/namics/request-registry/commit/eeaa47e))
+
+
+### Features
+
+* **core:** Allow to provide a custom cacheKeyGenerator ([316cd6b](https://github.com/namics/request-registry/commit/316cd6b))
+
+
+
+
+
 # [0.3.0](https://github.com/namics/request-registry/compare/v0.2.1...v0.3.0) (2019-06-04)
 
 
