@@ -3,7 +3,8 @@ import {
 	createEndpoint,
 	EndpointOptions,
 	EndpointWithoutRequestBodyFunction,
-	EndpointWithRequestBodyFunction
+	EndpointWithRequestBodyFunction,
+	createLoader
 } from "./lib/Endpoint";
 import { AjaxError as AjaxErrorType } from "./lib/errorHandler";
 export { ERROR_EMITTER } from "./lib/errorHandler";
@@ -282,4 +283,96 @@ export function createDeleteEndpoint<TKeys, TResult>(
 		"DELETE",
 		Object.assign({ cacheRequest: false }, options)
 	) as EndpointDeleteFunction<TKeys, TResult>;
+}
+
+// GraphQl Options
+export interface EndpointGraphQlOptions<TKeys, TResult, TKeysBind = TKeys>
+	extends EndpointCacheOptions<TKeys, null, TResult, TKeysBind> {
+	/**
+	 * A function to create the url
+	 */
+	url: (keys: TKeysBind) => string;
+	/**
+	 * GraphQL Query
+	 */
+	query: string;
+	/**
+	 * GraphQl Variables
+	 */
+	variables?: (keys: TKeysBind) => { [key: string]: any } | undefined;
+	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
+	/**
+	 * Wether to cache the request - true by default
+	 */
+	cacheRequest?: boolean;
+	/**
+	 * A cache store
+	 */
+	cache?: Cache<TResult>;
+	/**
+	 * A function which returns false if the cache is invalid
+	 *
+	 */
+	cacheValidator?: (
+		url: string,
+		headers: { [keys: string]: string },
+		cacheKey: string,
+		cache: Cache<TResult>,
+		api: EndpointWithoutRequestBodyFunction<TKeysBind, TResult, "GET">
+	) => boolean;
+	/**
+	 * A custom loader
+	 */
+	loader?: (
+		keys: TKeys,
+		url: string,
+		headers: { [key: string]: string },
+		graphQlBody: {
+			query: string;
+			variables: { [key: string]: any } | undefined;
+		}
+	) => Promise<TResult>;
+	/**
+	 * Success handler
+	 */
+	afterSuccess?: (result: TResult) => any;
+	/**
+	 * Error handler
+	 */
+	afterError?: (result: Response) => any;
+}
+
+export function createGraphQlEndpoint<TKeys, TResult>(
+	options: EndpointGraphQlOptions<TKeys, TResult>
+) {
+	const graphQLVariables = options.variables;
+	const loader =
+		options.loader ||
+		createLoader<TKeys, { query: string; variables: any }, TResult>("POST");
+	return createEndpoint(
+		"POST",
+		Object.assign(
+			{
+				cacheKey: (keys: TKeys, baseKey: string) =>
+					JSON.stringify(
+						graphQLVariables ? graphQLVariables(keys) : keys
+					) + baseKey
+			},
+			options,
+			{
+				loader: (
+					keys: TKeys,
+					url: string,
+					headers: { [key: string]: string }
+				) =>
+					// Build up the post body and execute the loader
+					loader(keys, url, headers, {
+						query: options.query,
+						variables: graphQLVariables
+							? graphQLVariables(keys)
+							: keys
+					})
+			}
+		)
+	);
 }
