@@ -1,23 +1,34 @@
 # RequestRegistry
 
-RequestRegistry is a generic utility (~1.5kb gziped) to be used as part of your frontend data fetching layer to provide a typed, simplified and consistent API over various remote web services via caching.
+RequestRegistry is a minimal generic utility (~1.5kb gziped) to be used as part of your frontend data fetching layer to provide a typed, simplified and consistent API over various remote web services via caching.
+
+## Goals
+
+-   Only ~1.5kb gziped (optimizable to 1kb with tree shaking)
+-   Framework independent
+-   Typesave
 
 ## Getting started
-
-RequestRegistry works with vanilla javascript.
 
 ```ts
 import { createGetEndpoint } from "request-registry";
 
+// Define a service endpoint to load user information
 const userEndpoint = createGetEndpoint({
     url: keys => `http://example.com/user/${keys.id}`
 });
 
-userEndpoint({ id: "4" }).then(data => console.log(data.firstName));
+// Load user information
+const user = await userEndpoint({ id: "4" });
+console.log(user.firstName);
 ```
 
+## Intellisense
+
+![intellisense demo](https://raw.githubusercontent.com/namics/request-registry/master/code.jpg)
+
 The optional build in typescript support will allow you to keep your data flow more maintainable
-as it allows you to understand which data has to be send to the backend and which data will be returned.
+as it allows you to understand which data has to be send and which data will be returned
 
 ```ts
 import { createGetEndpoint } from "request-registry";
