@@ -2,8 +2,8 @@
   "name": "request-registry-rxjs",
   "version": "0.6.0",
   "main": "dist/index.js",
-  "umd:main": "dist/request-registry-mobx.umd.production.js",
-  "module": "dist/request-registry-mobx.es.production.js",
+  "umd:main": "dist/request-registry-rxjs.umd.production.js",
+  "module": "dist/request-registry-rxjs.es.production.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist"
