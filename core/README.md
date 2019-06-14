@@ -1,5 +1,10 @@
 # RequestRegistry
 
+[![NPM version][npm-image]][npm-url]
+[![Size][size-image]][size-url]
+[![License][license-image]][license-url]
+[![Commitizen friendly][commitizen-image]][commitizen-url]
+
 RequestRegistry is a minimal generic utility (~1.5kb gziped) to be used as part of your frontend data fetching layer to provide a typed, simplified and consistent API over various remote web services via caching.
 
 ## Goals
@@ -147,7 +152,10 @@ actorsEndpoint().then(graphQLResponse => console.log(graphQLResponse));
 
 ## Caching
 
-Only GET operations will be cached.
+The build in caching allows executing the same endpoint multiple times
+without sending duplicated requests.
+
+Only GET and GraphQL operations will be cached by default.
 
 ```ts
 const userLoader = createGetEndpoint(...)
@@ -158,12 +166,17 @@ assert(promise1A === promise1B)
 
 ## Clearing Cache
 
+Clearing the cache will also trigger a clear cache event which
+can be used to rerender outdated components
+
 ```ts
 const userLoader = createGetEndpoint(...)
 userLoader.clearCache()
 ```
 
 ## Disabling Cache
+
+Caching can be disabled for cases where you always need a fresh result
 
 ```ts
 const userLoader = createGetEndpoint({
@@ -278,3 +291,12 @@ const userEndpoint = createGetEndpoint<Input, Output>({
 ## License
 
 [MIT license](http://opensource.org/licenses/MIT)
+
+[npm-image]: https://badge.fury.io/js/request-registry.svg
+[npm-url]: https://npmjs.org/package/request-registry
+[license-image]: https://img.shields.io/badge/license-MIT-green.svg
+[license-url]: http://opensource.org/licenses/MIT
+[commitizen-image]: https://img.shields.io/badge/commitizen-friendly-brightgreen.svg
+[commitizen-url]: http://commitizen.github.io/cz-cli/
+[size-image]: https://img.shields.io/bundlephobia/minzip/request-registry.svg
+[size-url]: https://bundlephobia.com/result?p=request-registry
