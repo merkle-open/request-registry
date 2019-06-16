@@ -86,21 +86,18 @@ export interface EndpointGetFunction<TKeys extends {}, TResult extends unknown>
 	 * Once all clear cache functions for the given keys have been
 	 * called the memory is freed after a timeout of 20s
 	 */
-	keepInCache: (keys: TKeys) => () => void;
+	observe: (keys: TKeys, callback: (result: TResult) => void) => () => void;
 	/**
-	 * Bind to cache clear events - returns a dispose function
+	 * Helper to prevent memory leaks
+	 *
+	 * Returns a clear cache function for the given keys
+	 * Once all clear cache functions for the given keys have been
+	 * called the memory is freed after a timeout of 20s
 	 */
-	on: (
-		eventName: "cacheClear",
-		callback: (previousCacheCreation: Date) => void
+	observePromise: (
+		keys: TKeys,
+		callback: (result: Promise<TResult>) => void
 	) => () => void;
-	/**
-	 * Unbind from cache clear events
-	 */
-	off: (
-		eventName: "cacheClear",
-		callback?: (previousCacheCreation: Date) => void
-	) => void;
 	/** Endpoint Method */
 	readonly method: "GET";
 }

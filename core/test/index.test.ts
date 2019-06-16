@@ -8,6 +8,14 @@ import {
 
 jest.useFakeTimers();
 
+function createDeferred() {
+	let resolveFn = () => {};
+	const promise = new Promise(resolve => {
+		resolveFn = resolve;
+	});
+	return Object.assign(promise, { resolve: resolveFn });
+}
+
 afterEach(() => {
 	fetchMock.restore();
 });
@@ -115,7 +123,7 @@ test("should allow memory cleanup", async () => {
 	);
 	expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
 	// Keep the mocked response
-	const cacheDisposer = runCountEndpoint.keepInCache({ id: "4" });
+	const cacheDisposer = runCountEndpoint.observe({ id: "4" }, () => {});
 	jest.runAllTimers();
 	// Verify that the value did not change as it came from cache
 	expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
@@ -137,7 +145,7 @@ test("should allow to call the cacheDisposer multiple times without error", asyn
 	);
 	expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
 	// Keep the mocked response
-	const cacheDisposer = runCountEndpoint.keepInCache({ id: "4" });
+	const cacheDisposer = runCountEndpoint.observe({ id: "4" }, () => {});
 	jest.runAllTimers();
 	// Verify that the value did not change as it came from cache
 	expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
@@ -161,14 +169,14 @@ test("should keep the cache if a new consumer hooks in", async () => {
 	);
 	expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
 	// Keep the mocked response
-	const cacheDisposer1 = runCountEndpoint.keepInCache({ id: "4" });
+	const cacheDisposer1 = runCountEndpoint.observe({ id: "4" }, () => {});
 	jest.runAllTimers();
 	// Verify that the value did not change as it came from cache
 	expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
 	// Clear cache
 	cacheDisposer1();
 	// Create a new cache disposer
-	const cacheDisposer2 = runCountEndpoint.keepInCache({ id: "4" });
+	const cacheDisposer2 = runCountEndpoint.observe({ id: "4" }, () => {});
 	jest.runAllTimers();
 	// Verify that the is still comming from cache
 	expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 0 });
@@ -176,6 +184,65 @@ test("should keep the cache if a new consumer hooks in", async () => {
 	jest.runAllTimers();
 	// Verify that the value is not comming from cache
 	expect(await runCountEndpoint({ id: "4" })).toEqual({ run: 1 });
+});
+
+test("should allow to use observePromise to obtain the endpoints value", async () => {
+	let loadCounter = 0;
+	fetchMock.get("http://example.com/run/4", () => ({ run: loadCounter++ }));
+	const runCountEndpoint = createGetEndpoint<{ id: string }, { run: number }>(
+		{
+			url: keys => `http://example.com/run/${keys.id}`
+		}
+	);
+	// Keep the mocked response
+	let latestPromise;
+	const cacheDisposer = runCountEndpoint.observePromise(
+		{ id: "4" },
+		endpointResultPromise => {
+			latestPromise = endpointResultPromise;
+		}
+	);
+	// Get first value
+	expect(await latestPromise).toEqual({ run: 0 });
+	// Clear cache
+	runCountEndpoint.clearCache();
+	jest.runAllTimers();
+	// Verify that the value is not comming from cache
+	expect(await latestPromise).toEqual({ run: 1 });
+	// Clear cache
+	cacheDisposer();
+});
+
+test("should allow to use observe to obtain the endpoints value", async () => {
+	let loadCounter = 0;
+	fetchMock.get("http://example.com/run/4", () => ({ run: loadCounter++ }));
+	const runCountEndpoint = createGetEndpoint<{ id: string }, { run: number }>(
+		{
+			url: keys => `http://example.com/run/${keys.id}`
+		}
+	);
+	// Keep the mocked response
+	let latestValue;
+	let nextChangePromise = createDeferred();
+	const cacheDisposer = runCountEndpoint.observe(
+		{ id: "4" },
+		endpointResult => {
+			latestValue = endpointResult;
+			nextChangePromise.resolve();
+		}
+	);
+	// Wait for first value
+	await nextChangePromise;
+	expect(latestValue).toEqual({ run: 0 });
+	nextChangePromise = createDeferred();
+	// Clear cache
+	runCountEndpoint.clearCache();
+	jest.runAllTimers();
+	// Verify that the value is not comming from cache
+	await nextChangePromise;
+	expect(latestValue).toEqual({ run: 1 });
+	// Clear cache
+	cacheDisposer();
 });
 
 describe("POST testing", () => {

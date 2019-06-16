@@ -50,30 +50,16 @@ export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 		TEndpoint
 	>(executeEndpoint);
 	latestKeys.current = keys;
-	// Whenever the cache is invalid
-	// and this component is still mounted
-	// execute the endpoint again
-	useEffect(
-		() =>
-			endpoint.on("cacheClear", () => {
-				const newEndpointPromise = executeEndpoint();
-				updateEndpointState({
-					type: "executeAjax",
-					promise: newEndpointPromise
-				});
-				return newEndpointPromise;
-			}),
-		[endpoint]
-	);
 	// Whenever the keys change execute the endpoints again
 	useEffect(() => {
-		updateEndpointState({
-			type: "executeAjax",
-			promise: executeEndpoint()
-		});
 		// Track this hook as endpoint consumer
 		// once all consumers are gone the memory will be freed
-		return endpoint.keepInCache(latestKeys.current);
+		return endpoint.observePromise(latestKeys.current, () => {
+			updateEndpointState({
+				type: "executeAjax",
+				promise: executeEndpoint()
+			});
+		});
 	}, [endpoint, endpoint.getCacheKey(keys)]);
 	return endpointState;
 }

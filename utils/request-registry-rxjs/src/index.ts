@@ -1,7 +1,7 @@
 //
 // This is a bridge to allow rxjs observers to use request-registry
 //
-import { EndpointGetFunction } from 'request-registry'; // MODULE NOT FOUND, had to `npm i request-registry`
+import { EndpointGetFunction } from 'request-registry';
 import { Observable, Observer } from 'rxjs';
 import { filter, map, tap } from 'rxjs/operators';
 
@@ -23,7 +23,7 @@ type EndpointState<TResult> =
 	| { busy: false; value: TResult; state: 'DONE'; hasData: true };
 
 /**
- * Returns an Observable for the endpoint state
+ * Returns an Observable for the endpoint staten
  */
 export const createObservableEndpoint = function createObservableEndpoint<
 	TEndpoint extends EndpointGetFunction<any, any>
@@ -33,7 +33,7 @@ export const createObservableEndpoint = function createObservableEndpoint<
 ): Observable<EndpointState<EndpointResult<TEndpoint>>> {
 	return new Observable(
 		(observer: Observer<EndpointState<EndpointResult<TEndpoint>>>) => {
-			let endpointPromise = execEndpoint();
+			let endpointPromise: Promise<EndpointResult<TEndpoint>> | undefined;
 			let lastResult: EndpointResult<TEndpoint> | undefined;
 
 			observer.next({
@@ -43,7 +43,7 @@ export const createObservableEndpoint = function createObservableEndpoint<
 				hasData: false,
 			});
 
-			function execEndpoint() {
+			return endpoint.observePromise(keys, () => {
 				if (lastResult) {
 					observer.next({
 						busy: true,
@@ -80,18 +80,7 @@ export const createObservableEndpoint = function createObservableEndpoint<
 						});
 						return currentPromise;
 					});
-				return currentPromise;
-			}
-
-			const destroyCache = endpoint.keepInCache(keys);
-			const unbindCacheClear = endpoint.on('cacheClear', () => {
-				endpointPromise = execEndpoint();
 			});
-
-			return () => {
-				unbindCacheClear();
-				destroyCache();
-			};
 		}
 	);
 };
