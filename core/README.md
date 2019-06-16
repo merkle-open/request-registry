@@ -288,6 +288,35 @@ const userEndpoint = createGetEndpoint<Input, Output>({
 });
 ```
 
+## Endpoint observing
+
+Invalidating the cache using `clearCache` will internaly trigger a clearCache event.  
+To subscribe to the initial data load and updates after a clear cache it is possible to observe an endpoint:
+
+```js
+const userEndpoint = createGetEndpoint({
+    url: keys => `http://example.com/user/${keys.id}`
+});
+const stopObserving = userEndpoint.observe(latestValue => {
+    // Output the user data intially and on every cache clear:
+    console.log(latestValue);
+});
+```
+
+To unsubscribe just execute the function returned by the `observe` function:
+
+```js
+stopObserving();
+```
+
+## Framework integration
+
+Although `request-registry` can be used standalone there are some unit tested packages to help with framework integrations:
+
+-   [request-registry-react](https://www.npmjs.com/package/request-registry-react)
+-   [request-registry-rxjs](https://www.npmjs.com/package/request-registry-rxjs)
+-   [request-registry-mobx](https://www.npmjs.com/package/request-registry-mobx)
+
 ## License
 
 [MIT license](http://opensource.org/licenses/MIT)

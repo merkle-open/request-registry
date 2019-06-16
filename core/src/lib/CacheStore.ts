@@ -28,27 +28,29 @@ export interface CacheStore<TKeys, TResult> {
 	 */
 	_state: { _cacheCreation?: Date };
 	/**
-	 * Helper to prevent memory leaks
+	 * Observe updates to the cache store
 	 *
 	 * Returns a clear cache function for the given keys
 	 * Once all clear cache functions for the given keys have been
 	 * called the memory is freed after a timeout of 20s
 	 */
-	keepInCache: (keys: TKeys) => () => void;
-	/**
-	 * Bind to cache clear events - returns a dispose function
-	 */
-	on: (
-		eventName: "cacheClear",
-		callback: (previousCacheCreation: Date) => void
+	observe: (
+		keys: TKeys,
+		callback: (result: TResult) => any,
+		timeout?: number
 	) => () => void;
 	/**
-	 * Unbind from cache clear events
+	 * Observe updates to the cache store
+	 *
+	 * Returns a clear cache function for the given keys
+	 * Once all clear cache functions for the given keys have been
+	 * called the memory is freed after a timeout of 20s
 	 */
-	off: (
-		eventName: "cacheClear",
-		callback?: (previousCacheCreation: Date) => void
-	) => void;
+	observePromise: (
+		keys: TKeys,
+		callback: (result: Promise<TResult>) => any,
+		timeout?: number
+	) => () => void;
 }
 
 /**
@@ -123,18 +125,17 @@ export function createCacheStore<
 		cache: Cache<TResult>;
 		_state: {};
 		getCacheKey: (keys: TKeys) => string;
-		keepInCache: (keys: TKeys, timeout?: number) => () => void;
-		clearCache: () => Promise<any[]>;
-		/** Bind to cache clear events - returns a dispose function */
-		on: (
-			eventName: "cacheClear",
-			callback: (previousCacheCreation: Date) => void
+		observe: (
+			keys: TKeys,
+			callback: (result: TResult) => any,
+			timeout?: number
 		) => () => void;
-		/** Unbind from cache clear events */
-		off: (
-			eventName: "cacheClear",
-			callback?: (previousCacheCreation: Date) => void
-		) => void;
+		observePromise: (
+			keys: TKeys,
+			callback: (result: Promise<TResult>) => any,
+			timeout?: number
+		) => () => void;
+		clearCache: () => Promise<any[]>;
 	} = {
 		cache,
 		_state: cacheState,
@@ -143,36 +144,79 @@ export function createCacheStore<
 			: getUrlCacheKey,
 		clearCache: () => {
 			const previousCacheCreation = cacheState._cacheCreation;
+			let cacheClearHandlers: Array<Promise<any> | void> = [];
 			if (previousCacheCreation) {
 				cacheState._cacheCreation = undefined;
 				keepInCacheTracker.clear();
 				cache.clear();
-				return Promise.all(
-					emitter.emit("cacheClear", previousCacheCreation)
+				cacheClearHandlers = emitter.emit(
+					"cacheClear",
+					previousCacheCreation
 				);
 			}
-			return Promise.resolve([]);
+			return Promise.all(cacheClearHandlers);
 		},
-		on: emitter.on.bind(emitter),
-		off: emitter.off.bind(emitter),
 		/**
-		 * Helper to prevent memory leaks for cached components
+		 * Observe updates to the cache store
 		 *
 		 * Returns a clear cache function for the given keys
 		 * Once all clear cache functions for the given keys have been
 		 * called the memory is freed after a timeout of 20s
 		 */
-		keepInCache: (keys: TKeys, timeout?: number) => {
+		observe: function(
+			keys: TKeys,
+			callback: (result: TResult) => any,
+			timeout?: number
+		) {
+			let latestPromise: Promise<TResult> | undefined;
+			return this.observePromise(
+				keys,
+				endpointPromise => {
+					// Store the latest endpoint promise
+					// to ensure that even if the backend speed differs
+					// only the latest ajax result is returned
+					latestPromise = endpointPromise;
+					return endpointPromise.then(result =>
+						latestPromise === endpointPromise
+							? callback(result)
+							: undefined
+					);
+				},
+				timeout
+			);
+		},
+		/**
+		 * Observe updates to the cache store
+		 * The callback is executed once a new load start
+		 *
+		 * Returns a clear cache function for the given keys
+		 * Once all clear cache functions for the given keys have been
+		 * called the memory is freed after a timeout of 20s
+		 */
+		observePromise: function(
+			keys: TKeys,
+			callback: (result: Promise<TResult>) => any,
+			timeout?: number
+		) {
 			const cacheKey = getUrlCacheKey(keys);
 			const consumer = keepInCacheTracker.get(cacheKey) || { _count: 0 };
 			consumer._count++;
 			clearTimeout(consumer._timeout);
 			keepInCacheTracker.set(cacheKey, consumer);
 			let disposed = false;
+			// The `observe` function will be bound to an endpoint therefore `this()` executes the endpoint.
+			// This is kind of hacky however it reduces the file size a lot
+			const endpoint = (this as any) as (keys: TKeys) => Promise<TResult>;
+			const executeEndpoint = () => callback(endpoint(keys));
+			// Execute the callback once again whenever the cache is cleared to get an up to date
+			// version of the endpoint data
+			const unbindCacheClear = emitter.on("cacheClear", executeEndpoint);
+			executeEndpoint();
 			// Return the release from cache function
 			// to allow garbage collection
 			return () => {
 				const consumer = keepInCacheTracker.get(cacheKey);
+				unbindCacheClear();
 				// If this is the last consumer and it has not been disposed
 				// start the cleanup timer
 				if (!disposed && consumer && --consumer._count <= 0) {

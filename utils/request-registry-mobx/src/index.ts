@@ -123,14 +123,11 @@ class MobxEndpoint<
 			return;
 		}
 		// Make sure that the garbage collector does not clean up the endpoint result:
-		this.disposables.push(this.endpoint.keepInCache(this.keys));
-		// If the cache is cleared execute the endpoint again
 		this.disposables.push(
-			this.endpoint.on('cacheClear', () => {
-				if (this.keys === undefined) {
-					return;
+			this.endpoint.observePromise(this.keys, () => {
+				if (this.keys) {
+					this.executeEndpoint();
 				}
-				return this.executeEndpoint();
 			})
 		);
 	}
