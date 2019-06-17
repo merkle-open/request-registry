@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.7.0](https://github.com/namics/request-registry/compare/v0.6.1...v0.7.0) (2019-06-17)
+
+
+### Features
+
+* Rename clearCache to refresh ([dfe4a1d](https://github.com/namics/request-registry/commit/dfe4a1d))
+
+
+### BREAKING CHANGES
+
+* clearCache is now called refresh
+
+
+
+
+
 # [0.6.0](https://github.com/namics/request-registry/compare/v0.5.0...v0.6.0) (2019-06-14)
 
 **Note:** Version bump only for package request-registry-mock
