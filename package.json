@@ -2,6 +2,9 @@
   "name": "request-registry-repository",
   "version": "1.0.0",
   "description": "RequestRegistry is a generic utility (~1.5kb gziped) to be used as part of your frontend data fetching layer to provide a typed, simplified and consistent API over various remote web services via caching.",
+  "bugs": "https://github.com/namics/request-registry/issues",
+  "homepage": "https://github.com/namics/request-registry",
+  "repository": "https://github.com/namics/request-registry.git",
   "scripts": {
     "\n// Installation": "",
     "postinstall": "lerna bootstrap --hoist --no-ci",
