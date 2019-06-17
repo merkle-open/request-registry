@@ -70,7 +70,7 @@ The `mockEndpointOnce` is similar to `mockEndpoint` however it will unbind after
 const userEndpoint = createGetEndpoint({ url: () => '/user' });
 mockEndpointOnce(getUserName, async () => ({ name: 'Joe' }));
 console.log(await userEndpoint()); // Will return the mocked value `{name: 'Joe'}`
-userEndpoint.clearCache();
+userEndpoint.refresh();
 console.log(await userEndpoint()); // Will return the value of an unmocked call`
 ```
 

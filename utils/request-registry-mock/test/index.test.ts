@@ -130,7 +130,7 @@ describe('request-registry-mock', () => {
 			userEndpointMock1.activate();
 			userEndpointMock2.activate();
 			expect(await userEndpoint({})).toEqual({ name: 'Chris' });
-			userEndpoint.clearCache();
+			userEndpoint.refresh();
 			userEndpointMock2.clear();
 			expect(await userEndpoint({})).toEqual({ name: 'Alex' });
 		});
@@ -155,7 +155,7 @@ describe('request-registry-mock', () => {
 			userEndpointMock1.activate();
 			userEndpointMock2.activate();
 			expect(await userEndpoint({})).toEqual({ name: 'Chris' });
-			userEndpoint.clearCache();
+			userEndpoint.refresh();
 			userEndpointMock1.clear();
 			expect(await userEndpoint({})).toEqual({ name: 'Chris' });
 			userEndpointMock2.clear();
@@ -171,7 +171,7 @@ describe('request-registry-mock', () => {
 			mockEndpointOnce(userEndpoint, async () => ({ name: 'Alex' }));
 			mockEndpointOnce(userEndpoint, async () => ({ name: 'Chris' }));
 			expect(await userEndpoint({})).toEqual({ name: 'Chris' });
-			userEndpoint.clearCache();
+			userEndpoint.refresh();
 			expect(await userEndpoint({})).toEqual({ name: 'Alex' });
 		});
 	});
@@ -196,7 +196,7 @@ describe('request-registry-mock', () => {
 			activateMocks(userEndpointMock1, userEndpointMock2);
 			expect(await userEndpoint({})).toEqual({ name: 'Chris' });
 			userEndpointMock2.clear();
-			userEndpoint.clearCache();
+			userEndpoint.refresh();
 			expect(await userEndpoint({})).toEqual({ name: 'Alex' });
 		});
 	});

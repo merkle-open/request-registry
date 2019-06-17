@@ -205,7 +205,7 @@ test("should allow to use observePromise to obtain the endpoints value", async (
 	// Get first value
 	expect(await latestPromise).toEqual({ run: 0 });
 	// Clear cache
-	runCountEndpoint.clearCache();
+	runCountEndpoint.refresh();
 	jest.runAllTimers();
 	// Verify that the value is not comming from cache
 	expect(await latestPromise).toEqual({ run: 1 });
@@ -236,7 +236,7 @@ test("should allow to use observe to obtain the endpoints value", async () => {
 	expect(latestValue).toEqual({ run: 0 });
 	nextChangePromise = createDeferred();
 	// Clear cache
-	runCountEndpoint.clearCache();
+	runCountEndpoint.refresh();
 	jest.runAllTimers();
 	// Verify that the value is not comming from cache
 	await nextChangePromise;
