@@ -171,7 +171,7 @@ can be used to rerender outdated components
 
 ```ts
 const userLoader = createGetEndpoint(...)
-userLoader.clearCache()
+userLoader.refresh()
 ```
 
 ## Disabling Cache
@@ -209,7 +209,7 @@ const getUserName = createGetEndpoint({
 })
 const setUserName = createPostEndpoint({
     url: keys => `http://example.com/user/${keys.id}/update`,
-    afterSuccess: () => getUserName.clearCache();
+    afterSuccess: () => getUserName.refresh();
 })
 ```
 
@@ -290,7 +290,7 @@ const userEndpoint = createGetEndpoint<Input, Output>({
 
 ## Endpoint observing
 
-Invalidating the cache using `clearCache` will internaly trigger a clearCache event.  
+Invalidating the cache using `refresh` will internaly trigger a refresh event.  
 To subscribe to the initial data load and updates after a clear cache it is possible to observe an endpoint:
 
 ```js

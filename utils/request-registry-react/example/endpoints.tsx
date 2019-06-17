@@ -21,10 +21,10 @@ export const loginEndpoint = createPostEndpoint<
 	{}
 >({
 	url: () => `/user/login`,
-	afterSuccess: () => productsEndpoint.clearCache()
+	afterSuccess: () => productsEndpoint.refresh()
 });
 
 export const logoutEndpoint = createPostEndpoint<{}, {}, {}>({
 	url: () => `/user/logout`,
-	afterSuccess: () => productsEndpoint.clearCache()
+	afterSuccess: () => productsEndpoint.refresh()
 });

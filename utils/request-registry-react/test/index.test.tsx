@@ -74,7 +74,7 @@ describe("request-registry-react", () => {
 			const { container } = render(<Runs />);
 			await wait();
 			expect(container.innerHTML).toEqual("<div>0</div>");
-			runsEndpoint.clearCache();
+			runsEndpoint.refresh();
 			await wait();
 			expect(container.innerHTML).toEqual("<div>1</div>");
 		});
@@ -108,7 +108,7 @@ describe("request-registry-react", () => {
 				async () => ({ name: "Fast", age: 1 }),
 				1
 			);
-			userEndpoint.clearCache();
+			userEndpoint.refresh();
 			// Execute fast request
 			await userEndpoint({ id: "4" });
 			await slowRequest;

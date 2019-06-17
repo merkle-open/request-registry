@@ -191,7 +191,7 @@ describe('request-registry-mobx', () => {
 			await when(() => endpoint.state === 'DONE');
 			expect(endpoint.value).toEqual({ runs: 1 });
 			// Invalidate the cache:
-			runEndpoint.clearCache();
+			runEndpoint.refresh();
 			// Wait for a new run count
 			await when(() =>
 				Boolean(endpoint.value && endpoint.value.runs !== 1)
@@ -212,7 +212,7 @@ describe('request-registry-mobx', () => {
 			// Start observing the endpoint:
 			const unobserve = autorun(() => endpoint.value);
 			// Invalidate the cache:
-			runEndpoint.clearCache();
+			runEndpoint.refresh();
 			expect(endpoint.busy).toEqual(true);
 			unobserve();
 		});

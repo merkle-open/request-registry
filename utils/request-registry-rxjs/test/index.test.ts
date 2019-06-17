@@ -107,7 +107,7 @@ describe('request-registry-rxjs', () => {
 			// Wait for first request
 			expect((await endpoint).value).toEqual({ runs: 1 });
 			// Invalidate the cache:
-			runEndpoint.clearCache();
+			runEndpoint.refresh();
 			// Wait for a new run count
 			expect((await endpoint2).value).toEqual({ runs: 2 });
 		});

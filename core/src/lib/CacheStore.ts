@@ -17,14 +17,14 @@ export interface CacheStore<TKeys, TResult> {
 	/**
 	 * Clear the cache for this url
 	 */
-	clearCache: () => void;
+	refresh: () => void;
 	/**
 	 * Cache Key
 	 */
 	getCacheKey: (keys: TKeys) => string;
 	/**
 	 * The time of the first write into the cache
-	 * will be reset on clearCache
+	 * will be reset on refresh
 	 */
 	_state: { _cacheCreation?: Date };
 	/**
@@ -135,14 +135,14 @@ export function createCacheStore<
 			callback: (result: Promise<TResult>) => any,
 			timeout?: number
 		) => () => void;
-		clearCache: () => Promise<any[]>;
+		refresh: () => Promise<any[]>;
 	} = {
 		cache,
 		_state: cacheState,
 		getCacheKey: cacheKeyGenerator
 			? keys => cacheKeyGenerator(keys, getUrlCacheKey(keys))
 			: getUrlCacheKey,
-		clearCache: () => {
+		refresh: () => {
 			const previousCacheCreation = cacheState._cacheCreation;
 			let cacheClearHandlers: Array<Promise<any> | void> = [];
 			if (previousCacheCreation) {

@@ -74,7 +74,7 @@ export interface EndpointGetFunction<TKeys extends {}, TResult extends unknown>
 	/**
 	 * Clear the cache for this url
 	 */
-	clearCache: () => void;
+	refresh: () => void;
 	/**
 	 * Cache Key
 	 */
