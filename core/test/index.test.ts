@@ -251,7 +251,7 @@ describe("POST testing", () => {
 		fetchMock.post(
 			"http://example.com/user/4",
 			() => (url: string, opts: any) => {
-				expect(opts.body).toEqual(postBody);
+				expect(opts.body).toEqual(JSON.stringify(postBody));
 				return { foo: "bar" };
 			}
 		);
@@ -288,7 +288,7 @@ describe("PUT testing", () => {
 		fetchMock.put(
 			"http://example.com/user/4",
 			() => (url: string, opts: any) => {
-				expect(opts.body).toEqual(putBody);
+				expect(opts.body).toEqual(JSON.stringify(putBody));
 				return { foo: "bar" };
 			}
 		);
