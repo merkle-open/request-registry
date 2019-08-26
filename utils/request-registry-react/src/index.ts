@@ -117,6 +117,29 @@ export function useGetEndPointSuspendable<
 	return endpointData.value;
 }
 
+/**
+ * Get the data from the given endpoint and caches the result as long as the component is mounted
+ *
+ * Will be executed only client side in the Browser
+ */
+export function useGetEndPointLazy<
+	TEndpoint extends EndpointGetFunction<any, any>
+>(
+	endpoint: TEndpoint,
+	keys: EndpointKeys<TEndpoint>
+): EndpointState<EndpointResult<TEndpoint>> {
+	const serverSideState: EndpointState<EndpointResult<TEndpoint>> = {
+		busy: true,
+		value: undefined,
+		state: "LOADING",
+		hasData: false,
+		promise: new Promise(() => {})
+	};
+	return typeof window === "undefined"
+		? serverSideState
+		: useGetEndPoint(endpoint, keys);
+}
+
 type EndpointState<TResult> =
 	| {
 			busy: true;

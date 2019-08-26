@@ -55,6 +55,11 @@ const UserDetailsContainer = () => {
 };
 ```
 
+### useGetEndPointLazy
+
+The useGetEndPoint can be used to load ajax data and handling the loading state in the same component
+exactly like `useGetEndPoint` however the request will only be executed on client side (if the window object exists)
+
 ### endpointState
 
 The return value of `useGetEndPoint` can have the following states:
