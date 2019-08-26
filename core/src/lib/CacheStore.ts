@@ -17,7 +17,7 @@ export interface CacheStore<TKeys, TResult> {
 	/**
 	 * Clear the cache for this url
 	 */
-	refresh: () => void;
+	refresh: () => Promise<any[]>;
 	/**
 	 * Cache Key
 	 */
@@ -165,7 +165,7 @@ export function createCacheStore<
 		 */
 		observe: function(
 			keys: TKeys,
-			callback: (result: TResult) => any,
+			callback: (result: TResult) => Promise<any>,
 			timeout?: number
 		) {
 			let latestPromise: Promise<TResult> | undefined;

@@ -55,10 +55,12 @@ export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 		// Track this hook as endpoint consumer
 		// once all consumers are gone the memory will be freed
 		return endpoint.observePromise(latestKeys.current, () => {
+			const result = executeEndpoint();
 			updateEndpointState({
 				type: "executeAjax",
 				promise: executeEndpoint()
 			});
+			return result;
 		});
 	}, [endpoint, endpoint.getCacheKey(keys)]);
 	return endpointState;
