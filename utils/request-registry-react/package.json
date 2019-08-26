@@ -1,6 +1,6 @@
 {
   "name": "request-registry-react",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "main": "dist/index.js",
   "umd:main": "dist/request-registry-react.umd.production.js",
   "module": "dist/request-registry-react.es.production.js",

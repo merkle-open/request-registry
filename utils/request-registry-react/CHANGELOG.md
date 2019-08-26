@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.8.1](https://github.com/namics/request-registry/compare/v0.8.0...v0.8.1) (2019-08-26)
+
+
+### Bug Fixes
+
+* **request-registry-react:** regenerate typings ([5ca4f37](https://github.com/namics/request-registry/commit/5ca4f37))
+
+
+
+
+
 # [0.8.0](https://github.com/namics/request-registry/compare/v0.7.1...v0.8.0) (2019-08-26)
 
 
