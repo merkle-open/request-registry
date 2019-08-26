@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.8.0](https://github.com/namics/request-registry/compare/v0.7.1...v0.8.0) (2019-08-26)
+
+
+### Bug Fixes
+
+* refreshing a react component returns now a promise ([f490e3e](https://github.com/namics/request-registry/commit/f490e3e))
+
+
+### Features
+
+* **request-registry-react:** add useGetEndPointLazy hook ([307b749](https://github.com/namics/request-registry/commit/307b749))
+
+
+
+
+
 ## [0.7.1](https://github.com/namics/request-registry/compare/v0.7.0...v0.7.1) (2019-06-20)
 
 
