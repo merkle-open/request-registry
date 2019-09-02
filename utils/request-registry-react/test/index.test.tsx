@@ -1,5 +1,9 @@
 import * as React from "react";
-import { useGetEndPoint, useGetEndPointSuspendable } from "../src";
+import {
+	useGetEndPoint,
+	useGetEndPointSuspendable,
+	useGetEndPointLazy
+} from "../src";
 import { createGetEndpoint } from "request-registry";
 import {
 	mockEndpoint,
@@ -115,6 +119,31 @@ describe("request-registry-react", () => {
 			// Make sure that the slow request which ended later is not shown in the result:
 			expect(container.innerHTML).toEqual("<div>Fast</div>");
 		});
+
+		it("allows to use a process function", () => {
+			const userEndpoint = createGetEndpoint<
+				{ id: string },
+				{ name: string }
+			>({
+				url: ({ id }) => `/user/${id}`
+			});
+			mockEndpoint(userEndpoint, async () => ({ name: "Alex" }));
+			const UserDetails = (props: { id: string }) => {
+				const value = useGetEndPoint(
+					userEndpoint,
+					{
+						id: props.id
+					},
+					data => data.value
+				);
+				if (!value) {
+					return <div>loading</div>;
+				}
+				return <div>{value.name}</div>;
+			};
+			const { container } = render(<UserDetails id="4" />);
+			expect(container.innerHTML).toEqual("<div>loading</div>");
+		});
 	});
 	describe("useGetEndPointSuspendable", () => {
 		it("renders loading state", () => {
@@ -160,6 +189,97 @@ describe("request-registry-react", () => {
 			);
 			await wait();
 			expect(container.innerHTML).toEqual("<div>Alex</div>");
+		});
+	});
+	describe("useGetEndPointLazy", () => {
+		it("renders loading state", () => {
+			const userEndpoint = createGetEndpoint<
+				{ id: string },
+				{ name: string }
+			>({
+				url: ({ id }) => `/user/${id}`
+			});
+			mockEndpoint(userEndpoint, async () => ({ name: "Alex" }));
+			const UserDetails = (props: { id: string }) => {
+				const endpointState = useGetEndPointLazy(userEndpoint, {
+					id: props.id
+				});
+				if (endpointState.state !== "DONE") {
+					return <div>loading</div>;
+				}
+				return <div>{endpointState.value.name}</div>;
+			};
+			const { container } = render(<UserDetails id="4" />);
+			expect(container.innerHTML).toEqual("<div>loading</div>");
+		});
+
+		it("renders load data", async () => {
+			const userEndpoint = createGetEndpoint<
+				{ id: string },
+				{ name: string }
+			>({
+				url: ({ id }) => `/user/${id}`
+			});
+			mockEndpoint(userEndpoint, async () => ({ name: "Alex" }));
+			const UserDetails = (props: { id: string }) => {
+				const endpointState = useGetEndPointLazy(userEndpoint, {
+					id: props.id
+				});
+				if (endpointState.state !== "DONE") {
+					return <div>loading</div>;
+				}
+				return <div>{endpointState.value.name}</div>;
+			};
+			const { container } = render(<UserDetails id="4" />);
+			await userEndpoint({ id: "4" });
+
+			expect(container.innerHTML).toEqual("<div>Alex</div>");
+		});
+
+		it("rerenders data if cache is invalidated", async () => {
+			const runsEndpoint = createGetEndpoint<{}, { run: number }>({
+				url: () => `/runs`
+			});
+			let runs = 0;
+			mockEndpoint(runsEndpoint, async () => ({ run: runs++ }));
+			const Runs = () => {
+				const endpointState = useGetEndPointLazy(runsEndpoint, {});
+				if (endpointState.state !== "DONE") {
+					return <div>loading</div>;
+				}
+				return <div>{endpointState.value.run}</div>;
+			};
+			const { container } = render(<Runs />);
+			await wait();
+			expect(container.innerHTML).toEqual("<div>0</div>");
+			runsEndpoint.refresh();
+			await wait();
+			expect(container.innerHTML).toEqual("<div>1</div>");
+		});
+
+		it("allows to use a process function", () => {
+			const userEndpoint = createGetEndpoint<
+				{ id: string },
+				{ name: string }
+			>({
+				url: ({ id }) => `/user/${id}`
+			});
+			mockEndpoint(userEndpoint, async () => ({ name: "Alex" }));
+			const UserDetails = (props: { id: string }) => {
+				const value = useGetEndPointLazy(
+					userEndpoint,
+					{
+						id: props.id
+					},
+					data => data.value
+				);
+				if (!value) {
+					return <div>loading</div>;
+				}
+				return <div>{value.name}</div>;
+			};
+			const { container } = render(<UserDetails id="4" />);
+			expect(container.innerHTML).toEqual("<div>loading</div>");
 		});
 	});
 });

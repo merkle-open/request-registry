@@ -2,7 +2,7 @@
 // This is a bridge to allow react components to use request-registry
 //
 import { EndpointGetFunction } from "request-registry";
-import { useEffect, useRef, useReducer, useCallback } from "react";
+import { useEffect, useRef, useReducer, useCallback, useMemo } from "react";
 
 type EndpointKeys<
 	TEndpointGetFunction
@@ -18,10 +18,18 @@ type EndpointResult<
 /**
  * Get the data from the given endpoint and caches the result as long as the component is mounted
  */
-export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
+export function useGetEndPoint<
+	TEndpoint extends EndpointGetFunction<any, any>,
+	TProcessorFN extends (
+		data: EndpointState<EndpointResult<TEndpoint>>
+	) => any = (
+		data: EndpointState<EndpointResult<TEndpoint>>
+	) => EndpointState<EndpointResult<TEndpoint>>
+>(
 	endpoint: TEndpoint,
-	keys: EndpointKeys<TEndpoint>
-) {
+	keys: EndpointKeys<TEndpoint>,
+	processFunction?: TProcessorFN
+): ReturnType<TProcessorFN> {
 	// Allow effects to access the latest key values
 	const latestKeys = useRef(keys);
 	// Helper to start ajax loading
@@ -63,7 +71,9 @@ export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 			return result;
 		});
 	}, [endpoint, endpoint.getCacheKey(keys)]);
-	return endpointState;
+	return processFunction
+		? useMemo(() => processFunction(endpointState), [endpointState])
+		: endpointState;
 }
 
 // Suspense will unmount the component while it is loading
@@ -123,11 +133,17 @@ export function useGetEndPointSuspendable<
  * Will be executed only client side in the Browser
  */
 export function useGetEndPointLazy<
-	TEndpoint extends EndpointGetFunction<any, any>
+	TEndpoint extends EndpointGetFunction<any, any>,
+	TProcessorFN extends (
+		data: EndpointState<EndpointResult<TEndpoint>>
+	) => any = (
+		data: EndpointState<EndpointResult<TEndpoint>>
+	) => EndpointState<EndpointResult<TEndpoint>>
 >(
 	endpoint: TEndpoint,
-	keys: EndpointKeys<TEndpoint>
-): EndpointState<EndpointResult<TEndpoint>> {
+	keys: EndpointKeys<TEndpoint>,
+	processFunction?: TProcessorFN
+): ReturnType<TProcessorFN> {
 	const serverSideState: EndpointState<EndpointResult<TEndpoint>> = {
 		busy: true,
 		value: undefined,
@@ -136,11 +152,13 @@ export function useGetEndPointLazy<
 		promise: new Promise(() => {})
 	};
 	return typeof window === "undefined"
-		? serverSideState
-		: useGetEndPoint(endpoint, keys);
+		? processFunction
+			? processFunction(serverSideState)
+			: serverSideState
+		: useGetEndPoint(endpoint, keys, processFunction);
 }
 
-type EndpointState<TResult> =
+type EndpointState<TResult> = Readonly<
 	| {
 			busy: true;
 			value: undefined;
@@ -168,7 +186,8 @@ type EndpointState<TResult> =
 			state: "DONE";
 			hasData: true;
 			promise: Promise<TResult>;
-	  };
+	  }
+>;
 
 const initialEndpointState = <TEndpoint extends EndpointGetFunction<any, any>>(
 	initialLoad: () => Promise<EndpointResult<TEndpoint>>
