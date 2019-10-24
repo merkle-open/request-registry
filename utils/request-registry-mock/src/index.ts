@@ -239,6 +239,11 @@ function unmockEndpoint(
 		if (previousLoader) {
 			endpoint.loader = previousLoader;
 		}
+		// Make sure that further access to the endpoint will not
+		// be a cached version of this mock
+		if ('cache' in endpoint && endpoint.cache) {
+			endpoint.cache.clear();
+		}
 	} else if (loaderFunction === undefined) {
 		// If no loaderFunction was given Erase all loaders
 		const originalLoader = originalLoadersOfEndpoint.splice(0)[0];
