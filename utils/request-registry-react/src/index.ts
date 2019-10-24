@@ -2,7 +2,7 @@
 // This is a bridge to allow react components to use request-registry
 //
 import { EndpointGetFunction } from "request-registry";
-import { useEffect, useRef, useReducer, useCallback } from "react";
+import { useEffect, useRef, useReducer, useCallback, useMemo } from "react";
 
 type EndpointKeys<
 	TEndpointGetFunction
@@ -17,13 +17,38 @@ type EndpointResult<
 
 /**
  * Get the data from the given endpoint and caches the result as long as the component is mounted
+ *
+ * The keys object has to be passed only if it contains a value
  */
+export function useGetEndPoint<
+	TEndpoint extends EndpointGetFunction<
+		{ [key: string]: never | undefined },
+		any
+	>
+>(endpoint: TEndpoint): EndpointState<EndpointResult<TEndpoint>>;
 export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 	endpoint: TEndpoint,
-	keys: EndpointKeys<TEndpoint>
-) {
+	keys: EndpointKeys<TEndpoint>,
+	executeAjax?: boolean
+): EndpointState<EndpointResult<TEndpoint>>;
+export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
+	endpoint: TEndpoint,
+	keysArg?: EndpointKeys<TEndpoint>,
+	executeAjax?: boolean
+): EndpointState<EndpointResult<TEndpoint>> {
 	// Allow effects to access the latest key values
+	const keys = keysArg || {};
 	const latestKeys = useRef(keys);
+	// Calculate the cacheKey only if the keys change
+	// empty keys are threaten as null to make sure as
+	// in javascript `{} !== {}` but `null === null`
+	const cacheKey = useMemo(() => endpoint.getCacheKey(keys), [
+		Object.keys(keys).length ? keys : null
+	]);
+	latestKeys.current = keys;
+	// Don't submit this endpoint if it is not enabled
+	// because of `!== false` it is set to true by default
+	const isEndpointEnabled = executeAjax !== false;
 	// Helper to start ajax loading
 	const executeEndpoint = useCallback(() => {
 		const currendEndpointPromise = endpoint(latestKeys.current);
@@ -49,9 +74,11 @@ export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 	const [endpointState, updateEndpointState] = useEndpointStateReduce<
 		TEndpoint
 	>(executeEndpoint);
-	latestKeys.current = keys;
 	// Whenever the keys change execute the endpoints again
 	useEffect(() => {
+		if (!isEndpointEnabled) {
+			return;
+		}
 		// Track this hook as endpoint consumer
 		// once all consumers are gone the memory will be freed
 		return endpoint.observePromise(latestKeys.current, () => {
@@ -62,7 +89,7 @@ export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 			});
 			return result;
 		});
-	}, [endpoint, endpoint.getCacheKey(keys)]);
+	}, [endpoint, cacheKey, isEndpointEnabled]);
 	return endpointState;
 }
 
@@ -121,12 +148,28 @@ export function useGetEndPointSuspendable<
  * Get the data from the given endpoint and caches the result as long as the component is mounted
  *
  * Will be executed only client side in the Browser
+ *
+ * The keys object has to be passed only if it contains a value
  */
+export function useGetEndPointLazy<
+	TEndpoint extends EndpointGetFunction<
+		{ [key: string]: never | undefined },
+		any
+	>
+>(endpoint: TEndpoint): EndpointState<EndpointResult<TEndpoint>>;
 export function useGetEndPointLazy<
 	TEndpoint extends EndpointGetFunction<any, any>
 >(
 	endpoint: TEndpoint,
-	keys: EndpointKeys<TEndpoint>
+	keys: EndpointKeys<TEndpoint>,
+	executeAjax?: boolean
+): EndpointState<EndpointResult<TEndpoint>>;
+export function useGetEndPointLazy<
+	TEndpoint extends EndpointGetFunction<any, any>
+>(
+	endpoint: TEndpoint,
+	keys?: EndpointKeys<TEndpoint>,
+	executeAjax?: boolean
 ): EndpointState<EndpointResult<TEndpoint>> {
 	const serverSideState: EndpointState<EndpointResult<TEndpoint>> = {
 		busy: true,
@@ -137,7 +180,11 @@ export function useGetEndPointLazy<
 	};
 	return typeof window === "undefined"
 		? serverSideState
-		: useGetEndPoint(endpoint, keys);
+		: useGetEndPoint(
+				endpoint,
+				keys as EndpointKeys<TEndpoint>,
+				executeAjax
+		  );
 }
 
 type EndpointState<TResult> =
