@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0](https://github.com/namics/request-registry/compare/v0.8.1...v0.9.0) (2019-10-24)
+
+
+### Bug Fixes
+
+* **request-registry-mock:** Clear cache on mock activation ([2fc927e](https://github.com/namics/request-registry/commit/2fc927e))
+* **request-registry-mock:** Clear caches after reverting a mock ([a40096b](https://github.com/namics/request-registry/commit/a40096b))
+
+
+
+
+
 # [0.8.0](https://github.com/namics/request-registry/compare/v0.7.1...v0.8.0) (2019-08-26)
 
 **Note:** Version bump only for package request-registry-mock

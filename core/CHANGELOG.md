@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0](https://github.com/namics/request-registry/compare/v0.8.1...v0.9.0) (2019-10-24)
+
+
+### Features
+
+* **core:** Allow public access to cache ([4eb12c1](https://github.com/namics/request-registry/commit/4eb12c1))
+
+
+
+
+
 # [0.8.0](https://github.com/namics/request-registry/compare/v0.7.1...v0.8.0) (2019-08-26)
 
 

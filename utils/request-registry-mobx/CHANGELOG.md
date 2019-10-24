@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.9.0](https://github.com/namics/request-registry/compare/v0.8.1...v0.9.0) (2019-10-24)
+
+
+### Bug Fixes
+
+* **request-registry-mobx:** Increase unit test timeout for travis ([d5aadf0](https://github.com/namics/request-registry/commit/d5aadf0))
+
+
+
+
+
 # [0.8.0](https://github.com/namics/request-registry/compare/v0.7.1...v0.8.0) (2019-08-26)
 
 **Note:** Version bump only for package request-registry-mobx
