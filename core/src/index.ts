@@ -80,6 +80,10 @@ export interface EndpointGetFunction<TKeys extends {}, TResult extends unknown>
 	 */
 	getCacheKey: (keys: TKeys) => string;
 	/**
+	 * A cache store
+	 */
+	cache?: Cache<TResult>;
+	/**
 	 * Helper to prevent memory leaks
 	 *
 	 * Returns a clear cache function for the given keys
