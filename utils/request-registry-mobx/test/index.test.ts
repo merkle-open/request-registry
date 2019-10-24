@@ -131,7 +131,7 @@ describe('request-registry-mobx', () => {
 						'/user/1': { name: 'Sue', age: 24 },
 						'/user/2': { name: 'Joe', age: 18 },
 					}[(url as '/user/1') || '/user/2']),
-				1
+				50
 			);
 			const endpoint = createObservableEndpoint(userEndpoint, {
 				id: '1',
