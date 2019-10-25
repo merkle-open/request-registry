@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.9.2](https://github.com/namics/request-registry/compare/v0.9.1...v0.9.2) (2019-10-25)
+
+
+### Bug Fixes
+
+* **request-registry-mock:** Don't notifiy observers on unmocking to prevent unexpected requests ([99aa769](https://github.com/namics/request-registry/commit/99aa769))
+
+
+
+
+
 ## [0.9.1](https://github.com/namics/request-registry/compare/v0.9.0...v0.9.1) (2019-10-25)
 
 
