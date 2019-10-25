@@ -213,9 +213,12 @@ export function mockEndpoint<
 	};
 	// Add the original mockFunction to find it during cleanup
 	baseMocks.set(endpoint.loader, mockResponse);
-	// Refresh previous caches if any exists
-	if ('refresh' in endpoint) {
-		(endpoint as EndpointGetFunction<any, any>).refresh();
+	// Clear caches without rerendering
+	const cache =
+		'cache' in endpoint &&
+		(endpoint as EndpointGetFunction<any, any>).cache;
+	if (cache) {
+		cache.clear();
 	}
 	// Return the dispose function
 	return unmockEndpoint.bind(null, endpoint, endpoint.loader);
