@@ -115,6 +115,68 @@ describe("request-registry-react", () => {
 			// Make sure that the slow request which ended later is not shown in the result:
 			expect(container.innerHTML).toEqual("<div>Fast</div>");
 		});
+
+		it("will send the ajax requests if not explicitly disabled", async () => {
+			const userEndpoint = createGetEndpoint<
+				{ id: string },
+				{ name: string; age: number }
+			>({
+				url: keys => `/user/${keys.id}`
+			});
+			let endpointExecutionCount = 0;
+			mockEndpointOnce(userEndpoint, async () => {
+				endpointExecutionCount++;
+				return { name: "Joe", age: 20 };
+			});
+			const UserDetails = (props: { id: string }) => {
+				const endpointState = useGetEndPoint(
+					userEndpoint,
+					{
+						id: props.id
+					},
+					true
+				);
+				if (endpointState.state !== "DONE") {
+					return <div>loading</div>;
+				}
+				return <div>{endpointState.value.name}</div>;
+			};
+			render(<UserDetails id="4" />);
+			await new Promise(resolve => process.nextTick(resolve));
+			// Verify that the request was executed
+			expect(endpointExecutionCount).toEqual(1);
+		});
+
+		it("will not send the ajax requests if explicitly disabled", async () => {
+			const userEndpoint = createGetEndpoint<
+				{ id: string },
+				{ name: string; age: number }
+			>({
+				url: keys => `/user/${keys.id}`
+			});
+			let endpointExecutionCount = 0;
+			mockEndpointOnce(userEndpoint, async () => {
+				endpointExecutionCount++;
+				return { name: "Joe", age: 20 };
+			});
+			const UserDetails = (props: { id: string }) => {
+				const endpointState = useGetEndPoint(
+					userEndpoint,
+					{
+						id: props.id
+					},
+					false
+				);
+				if (endpointState.state !== "DONE") {
+					return <div>loading</div>;
+				}
+				return <div>{endpointState.value.name}</div>;
+			};
+			render(<UserDetails id="4" />);
+			await new Promise(resolve => process.nextTick(resolve));
+			// Verify that the request was not executed
+			expect(endpointExecutionCount).toEqual(0);
+		});
 	});
 	describe("useGetEndPointSuspendable", () => {
 		it("renders loading state", () => {

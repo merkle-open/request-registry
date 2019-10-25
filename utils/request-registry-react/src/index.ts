@@ -39,6 +39,15 @@ export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 	// Allow effects to access the latest key values
 	const keys = keysArg || {};
 	const latestKeys = useRef(keys);
+	// Don't submit this endpoint if it is not enabled
+	// because of `!== false` it is set to true by default
+	const isEndpointEnabled = executeAjax !== false;
+	// Promise to wait for executeAjax to be true for the first time
+	// This is neccessary to postpone the initial ajax execution
+	const [
+		endpointBecomesEnabledPromise,
+		endpointEnabledState
+	] = useWaitForValuePromise(isEndpointEnabled, enabled => enabled);
 	// Calculate the cacheKey only if the keys change
 	// empty keys are threaten as null to make sure as
 	// in javascript `{} !== {}` but `null === null`
@@ -46,12 +55,16 @@ export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 		Object.keys(keys).length ? keys : null
 	]);
 	latestKeys.current = keys;
-	// Don't submit this endpoint if it is not enabled
-	// because of `!== false` it is set to true by default
-	const isEndpointEnabled = executeAjax !== false;
 	// Helper to start ajax loading
 	const executeEndpoint = useCallback(() => {
-		const currendEndpointPromise = endpoint(latestKeys.current);
+		// Once the endpoint is enabeld return the endpoint(latestKeys.current)
+		// from cache to prevent endless loops during suspense
+		const currendEndpointPromise = endpointEnabledState.done
+			? endpoint(latestKeys.current)
+			: endpointBecomesEnabledPromise.then(() =>
+					endpoint(latestKeys.current)
+			  );
+		// Once data is received update the internal hook state
 		currendEndpointPromise.then(
 			result => {
 				updateEndpointState({
@@ -304,4 +317,32 @@ function useEndpointStateReduce<
 			action: EndpointActions<TEndpoint>
 		) => EndpointState<EndpointResult<TEndpoint>>
 	];
+}
+
+function useWaitForValuePromise<T extends any>(
+	value: T,
+	conditionFunction: (value: T) => boolean
+) {
+	const [promise, resolve, ref] = useMemo(() => {
+		const refObject = { done: conditionFunction(value) };
+		let innerResolve: undefined | ((value: T) => void) = undefined as
+			| undefined
+			| ((value: T) => void);
+		const promise = new Promise<T>(resolve => {
+			innerResolve = resolve;
+		});
+		if (refObject.done) {
+			return [Promise.resolve(value), innerResolve, refObject] as const;
+		}
+		return [promise, innerResolve, refObject] as const;
+	}, []);
+	useEffect(() => {
+		if (resolve && !ref.done) {
+			ref.done = conditionFunction(value);
+			if (ref.done) {
+				resolve(value);
+			}
+		}
+	}, [value]);
+	return [promise, ref] as const;
 }
