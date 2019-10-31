@@ -25,13 +25,13 @@
     "test": "tsdx test"
   },
   "devDependencies": {
-    "@types/fetch-mock": "7.3.0",
-    "@types/jest": "24.0.13",
-    "fetch-mock": "7.3.3",
+    "@types/fetch-mock": "7.3.1",
+    "@types/jest": "24.0.21",
+    "fetch-mock": "7.7.0",
     "node-fetch": "2.6.0",
     "pkg-ok": "2.3.1",
-    "tsdx": "0.6.1",
-    "typescript": "3.5.1"
+    "tsdx": "0.11.0",
+    "typescript": "3.6.4"
   },
   "config": {
     "commitizen": {
