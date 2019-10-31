@@ -11,7 +11,7 @@ Features:
 ## Getting started
 
 ```
-npm install --save request-registry registry-request-mobx
+npm install --save request-registry registry-request-react
 ```
 
 ## Api
@@ -21,6 +21,8 @@ npm install --save request-registry registry-request-mobx
 The useGetEndPoint can be used to load ajax data and handling the loading state in the same component:
 
 ```jsx
+import { useGetEndPoint } from "registry-request-react";
+
 const UserDetails = props => {
     const endpointState = useGetEndPoint(userEndpoint, { id: props.id });
     if (endpointState.state !== "DONE") {
@@ -39,6 +41,8 @@ The useGetEndPointSuspendable can be used in combination with `React.Suspense` t
 ajax data:
 
 ```jsx
+import { useGetEndPointSuspendable } from "registry-request-react";
+
 const UserDetails = props => {
     const { name } = useGetEndPointSuspendable(userEndpoint, { id: props.id });
     return <div>{name}</div>;
