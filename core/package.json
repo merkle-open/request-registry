@@ -43,5 +43,6 @@
       "path": "dist/request-registry.cjs.production.js",
       "limit": "1.5 KB"
     }
-  ]
+  ],
+  "gitHead": "de326679477033960958b037dfe8b26b3597f253"
 }
