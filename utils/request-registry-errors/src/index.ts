@@ -1,5 +1,9 @@
-import { RequestErrorDetails } from 'request-registry/src/lib/errorHandler';
-export { RequestErrorDetails } from 'request-registry/src/lib/errorHandler';
+import { RequestError } from 'request-registry/src/lib/errorHandler';
+
+type RequestErrorDetails = {
+	response: Response;
+	responseContent: unknown;
+};
 
 /**
  * Try to detect if the unhandled promise is an RequestRegistry Errror
@@ -7,7 +11,7 @@ export { RequestErrorDetails } from 'request-registry/src/lib/errorHandler';
 function isRequestRegistryError(
 	unhandledPromiseError: PromiseRejectionEvent
 ): unhandledPromiseError is Omit<PromiseRejectionEvent, 'reason'> & {
-	reason: Error & { __requestRegistry: RequestErrorDetails };
+	reason: RequestError;
 } {
 	return (
 		typeof unhandledPromiseError.reason === 'object' &&
