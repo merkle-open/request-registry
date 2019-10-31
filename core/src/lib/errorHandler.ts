@@ -40,9 +40,11 @@ export function errorHandler(
 	);
 }
 
-export type RequestErrorDetails = {
-	response: Response;
-	responseContent: unknown;
+export type RequestError = Error & {
+	__requestRegistry: {
+		response: Response;
+		responseContent: unknown;
+	};
 };
 
 /**
@@ -77,10 +79,13 @@ function broadcastAjaxError(
 				// Add a hidden property which can be extracted using the request-registry-errors package
 				Object.defineProperty(unhandledErrror, "__requestRegistry", {
 					enumerable: false,
-					value: { response, responseContent } as RequestErrorDetails,
+					value: {
+						response,
+						responseContent
+					} as RequestError["__requestRegistry"],
 					writable: false
 				});
-				reject(unhandledErrror);
+				reject(unhandledErrror as RequestError);
 			}
 		}
 	});
