@@ -40,6 +40,11 @@ export function errorHandler(
 	);
 }
 
+export type RequestErrorDetails = {
+	response: Response;
+	responseContent: unknown;
+};
+
 /**
  * Broadcasts a global window event.
  */
@@ -57,8 +62,8 @@ function broadcastAjaxError(
 			errorHandlingAttemps
 		}).some(result => result === false);
 		if (!defaultWasPrevented) {
-			reject(
-				new Error(
+			if (!defaultWasPrevented) {
+				const unhandledErrror = new Error(
 					process.env.NODE_ENV !== "production"
 						? `Unhandled ajax error ${
 								response.status
@@ -68,8 +73,15 @@ function broadcastAjaxError(
 								","
 						  ) || "none"}`
 						: "Ajax failed"
-				)
-			);
+				);
+				// Add a hidden property which can be extracted using the request-registry-errors package
+				Object.defineProperty(unhandledErrror, "__requestRegistry", {
+					enumerable: false,
+					value: { response, responseContent } as RequestErrorDetails,
+					writable: false
+				});
+				reject(unhandledErrror);
+			}
 		}
 	});
 }
