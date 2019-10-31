@@ -14,7 +14,8 @@ function isRequestRegistryError(
 	reason: RequestError;
 } {
 	return (
-		typeof unhandledPromiseError.reason === 'object' &&
+		typeof unhandledPromiseError.reason &&
+		unhandledPromiseError.reason === 'object' &&
 		'__requestRegistry' in unhandledPromiseError.reason
 	);
 }
