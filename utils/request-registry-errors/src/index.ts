@@ -1,6 +1,6 @@
 import { RequestError } from 'request-registry/src/lib/errorHandler';
 
-type RequestErrorDetails = {
+export type RequestErrorDetails = {
 	response: Response;
 	responseContent: unknown;
 };
@@ -14,8 +14,8 @@ function isRequestRegistryError(
 	reason: RequestError;
 } {
 	return (
-		typeof unhandledPromiseError.reason &&
-		unhandledPromiseError.reason === 'object' &&
+		unhandledPromiseError.reason &&
+		typeof unhandledPromiseError.reason === 'object' &&
 		'__requestRegistry' in unhandledPromiseError.reason
 	);
 }
@@ -34,11 +34,20 @@ function getRequestRegistryErrorDetails(
 export function onUnhandledRequestRegistyError(
 	callback: (e: RequestErrorDetails) => void
 ): () => void {
+	const knownErrorResponses = new WeakSet<Response>();
 	const handler = (unhandledPromiseError: PromiseRejectionEvent) => {
 		const errorDetails = getRequestRegistryErrorDetails(
 			unhandledPromiseError
 		);
 		if (errorDetails) {
+			// Check if the callback was already executed
+			// for this error
+			// This might happen if multiple parts of the app use
+			// the same endpoint
+			if (knownErrorResponses.has(errorDetails.response)) {
+				return;
+			}
+			knownErrorResponses.add(errorDetails.response);
 			callback(errorDetails);
 		}
 	};
