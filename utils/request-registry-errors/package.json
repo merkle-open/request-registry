@@ -1,7 +1,7 @@
 {
   "name": "request-registry-errors",
   "description": "Helper to catch unhandled request-registry errors for logging or showing global notifications",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "main": "dist/index.js",
   "umd:main": "dist/request-registry-errors.umd.production.js",
   "module": "dist/request-registry-errors.es.production.js",
