@@ -341,6 +341,12 @@ function isEndpointFunctionWithoutBody<TEndpoint extends Endpoint>(
 	return endpoint.method === 'GET' || endpoint.method === 'DELETE';
 }
 
+let mockLogging = true;
+/** Allow to disable logs */
+export const setRequestMockLogging = (isEnabled: boolean) => {
+	mockLogging = isEnabled;
+};
+
 function logRequest<TEndpoint extends Endpoint>(
 	endpoint: TEndpoint,
 	url: string,
@@ -348,6 +354,10 @@ function logRequest<TEndpoint extends Endpoint>(
 	result: Promise<EndpointResult<TEndpoint>>,
 	body?: EndpointBody<TEndpoint>
 ) {
+	// If logging is disabled skip this (e.g. during unit tests)
+	if (!mockLogging) {
+		return result;
+	}
 	// For nodejs skip the fake request
 	/* istanbul ignore else */
 	if (typeof fetch === 'undefined') {

@@ -4,6 +4,7 @@ import {
 	mockEndpointOnce,
 	mockEndpoint,
 	activateMocks,
+	setRequestMockLogging,
 } from '../src/';
 import {
 	createGetEndpoint,
@@ -321,6 +322,25 @@ describe('request-registry-mock', () => {
 				},
 				url: '/user/1',
 			});
+		});
+	});
+
+	describe('Logging', () => {
+		it('should allow to disable logging', async () => {
+			setRequestMockLogging(false);
+			const setEmailEndpoint = createPostEndpoint<
+				{ userId: string },
+				{ email: string },
+				{ emailSet: boolean }
+			>({
+				url: ({ userId }) => `/user/${userId}`,
+			});
+			mockEndpoint(setEmailEndpoint, async () => ({ emailSet: true }));
+			const response = await setEmailEndpoint(
+				{ userId: '1' },
+				{ email: 'alex@host.com' }
+			);
+			expect(response).toEqual({ emailSet: true });
 		});
 	});
 });

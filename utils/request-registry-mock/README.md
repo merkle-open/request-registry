@@ -115,6 +115,15 @@ mockGroup.activate();
 
 It is even possible to group multiple groups into one.
 
+## setRequestMockLogging
+
+In some scenarios like jest test runs it can be helpful to disable the logging done
+by this library.
+
+```js
+setRequestMockLogging(false);
+```
+
 ## License
 
 [MIT license](http://opensource.org/licenses/MIT)
