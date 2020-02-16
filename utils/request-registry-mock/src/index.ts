@@ -420,9 +420,10 @@ function groupLog(entry: string[], content: any[]) {
 		: entryText || '';
 	const groupStart = simpleMode ? console.log : console.groupCollapsed;
 	const groupEnd = (simpleMode ? () => {} : console.groupEnd).bind(console);
-	groupStart.apply(console, [processedEntryText].concat(
-		simpleMode ? [] : entryStyles
-	) as any);
+	groupStart.apply(
+		console,
+		[processedEntryText].concat(simpleMode ? [] : entryStyles) as any
+	);
 	content.forEach(contentRow => console.log(contentRow));
 	groupEnd();
 }

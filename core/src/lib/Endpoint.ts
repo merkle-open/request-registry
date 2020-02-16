@@ -123,12 +123,12 @@ export function createEndpoint<
 >(
 	method: TMethod,
 	options:
-		| EndpointOptions<TKeys, TBody, TResult> & {
+		| (EndpointOptions<TKeys, TBody, TResult> & {
 				cacheRequest: false;
 				cacheValidator: undefined;
-		  }
-		| EndpointOptions<TKeys, TBody, TResult> &
-				EndpointCacheOptions<TKeys, TBody, TResult>
+		  })
+		| (EndpointOptions<TKeys, TBody, TResult> &
+				EndpointCacheOptions<TKeys, TBody, TResult>)
 ) {
 	const loader =
 		(options.loader as LoaderFunction<TKeys, TBody, TResult> | undefined) ||
