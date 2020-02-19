@@ -3,6 +3,20 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.11.1](https://github.com/namics/request-registry/compare/v0.11.0...v0.11.1) (2020-02-19)
+
+
+### Bug Fixes
+
+* adjust module path ([a73b950](https://github.com/namics/request-registry/commit/a73b9507d38c0bd868a4630cc6b34bf6842160a7))
+* Upgrade dependencies ([daa451e](https://github.com/namics/request-registry/commit/daa451e01fbcba9f0b24e23e4c923c2a4fe3d76a))
+* Upgrade dependencies ([712d111](https://github.com/namics/request-registry/commit/712d111616abadabb593f6ee38bd110835074b7a))
+* Upgrade dependencies ([be0f36c](https://github.com/namics/request-registry/commit/be0f36cbe6912c92ddd7ba61b93bf037a601c0ae))
+
+
+
+
+
 # [0.11.0](https://github.com/namics/request-registry/compare/v0.10.3...v0.11.0) (2019-12-18)
 
 
