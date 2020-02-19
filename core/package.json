@@ -9,7 +9,7 @@
   "author": "Jan Nicklas",
   "main": "dist/index.js",
   "umd:main": "dist/request-registry.umd.production.js",
-  "module": "dist/request-registry.es.production.js",
+  "module": "dist/request-registry.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist"

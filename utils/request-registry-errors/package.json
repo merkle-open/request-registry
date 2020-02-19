@@ -4,7 +4,7 @@
   "version": "0.11.0",
   "main": "dist/index.js",
   "umd:main": "dist/request-registry-errors.umd.production.js",
-  "module": "dist/request-registry-errors.es.production.js",
+  "module": "dist/request-registry-errors.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist"

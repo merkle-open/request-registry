@@ -3,7 +3,7 @@
   "version": "0.11.0",
   "main": "dist/index.js",
   "umd:main": "dist/request-registry-mobx.umd.production.js",
-  "module": "dist/request-registry-mobx.es.production.js",
+  "module": "dist/request-registry-mobx.esm.js",
   "typings": "dist/index.d.ts",
   "files": [
     "dist"
