@@ -33,6 +33,15 @@ const UserDetails = props => {
 };
 ```
 
+Conditional data loading is possible by providing a third `executeAjax` argument:
+
+```jsx
+// Execute ajax
+useGetEndPoint(userEndpoint, { id: props.id }, true);
+// Don't execute ajax
+useGetEndPoint(userEndpoint, { id: props.id }, false);
+```
+
 ### useGetEndPointSuspendable
 
 ⚠️ React.Suspense is not supported by React Server Side Rendering
