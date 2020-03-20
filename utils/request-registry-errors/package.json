@@ -1,7 +1,7 @@
 {
   "name": "request-registry-errors",
   "description": "Helper to catch unhandled request-registry errors for logging or showing global notifications",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "main": "dist/index.js",
   "umd:main": "dist/request-registry-errors.umd.production.js",
   "module": "dist/request-registry-errors.esm.js",
@@ -32,7 +32,7 @@
   "devDependencies": {
     "@types/jest": "25.1.2",
     "pkg-ok": "2.3.1",
-    "request-registry": "^0.11.1",
+    "request-registry": "^0.11.2",
     "tsdx": "0.12.3",
     "tslib": "1.10.0",
     "typescript": "3.7.5"

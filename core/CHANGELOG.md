@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.11.2](https://github.com/namics/request-registry/compare/v0.11.1...v0.11.2) (2020-03-20)
+
+
+### Bug Fixes
+
+* grant access to the error response ([e5aaba9](https://github.com/namics/request-registry/commit/e5aaba9a331d271fa0a886c65f3d7ec2ad904665))
+
+
+
+
+
 ## [0.11.1](https://github.com/namics/request-registry/compare/v0.11.0...v0.11.1) (2020-02-19)
 
 
