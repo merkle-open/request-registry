@@ -88,7 +88,10 @@ test("should fire the error function once a request fails", async () => {
 });
 
 test("should fire the error function once a request fails", async () => {
-	fetchMock.get("http://example.com/user/4", 404);
+	fetchMock.get("http://example.com/user/4", {
+		body: JSON.stringify({ message: "something went wrong" }),
+		status: 400
+	});
 	const userEndpoint = createGetEndpoint<
 		{ id: string },
 		{ firstName: string }
@@ -96,9 +99,7 @@ test("should fire the error function once a request fails", async () => {
 		url: keys => `http://example.com/user/${keys.id}`
 	});
 	const error = await userEndpoint({ id: "4" }).catch(error => error);
-	expect(error.message).toEqual(
-		'Unhandled ajax error 404 {"message":""} Resolve Attemps: none'
-	);
+	expect(error.message).toEqual("something went wrong");
 });
 
 test("should allow to use a custom loader", async () => {
