@@ -256,14 +256,19 @@ export function getHeaders<
 	let cacheKey = "";
 	const headers: { [key: string]: string } = {};
 	headerKeys.forEach(headerKey => {
-		const headerValueOfKey: string | ((keys: TKeys) => string) =
+		const headerValueOfKey:
+			| string
+			| undefined
+			| ((keys: TKeys) => string | void | undefined) =
 			headerTemplate[headerKey];
 		const header =
 			typeof headerValueOfKey === "function"
 				? headerValueOfKey(keys)
 				: headerValueOfKey;
 		cacheKey += JSON.stringify(header);
-		headers[headerKey as string] = header;
+		if (header) {
+			headers[headerKey as string] = header;
+		}
 	});
 	return {
 		_cacheKey: cacheKey,

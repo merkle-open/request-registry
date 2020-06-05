@@ -86,7 +86,10 @@ export interface EndpointOptions<TKeys, TBody, TResult, TKeysBind = TKeys> {
 }
 
 export type EndpointHeadersTemplate<TKeys> = {
-	[keys: string]: ((keys: TKeys) => string) | string;
+	[keys: string]:
+		| ((keys: TKeys) => string | void | undefined)
+		| string
+		| undefined;
 };
 
 export type LoaderFunction<TKeys, TBody, TResult> = (
