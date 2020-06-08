@@ -60,7 +60,12 @@ export interface EndpointOptions<TKeys, TBody, TResult, TKeysBind = TKeys> {
 	 * A function to create the url
 	 */
 	url: (keys: TKeysBind) => string;
-	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
+	headers?: {
+		[keys: string]:
+			| string
+			| undefined
+			| ((keys: TKeysBind) => string | void | undefined);
+	};
 	/**
 	 * A custom loader
 	 */
@@ -81,7 +86,10 @@ export interface EndpointOptions<TKeys, TBody, TResult, TKeysBind = TKeys> {
 }
 
 export type EndpointHeadersTemplate<TKeys> = {
-	[keys: string]: ((keys: TKeys) => string) | string;
+	[keys: string]:
+		| ((keys: TKeys) => string | void | undefined)
+		| string
+		| undefined;
 };
 
 export type LoaderFunction<TKeys, TBody, TResult> = (

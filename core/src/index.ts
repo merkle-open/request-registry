@@ -21,7 +21,12 @@ export interface EndpointGetOptions<TKeys, TResult, TKeysBind = TKeys>
 	 * A function to create the url
 	 */
 	url: (keys: TKeysBind) => string;
-	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
+	headers?: {
+		[keys: string]:
+			| string
+			| undefined
+			| ((keys: TKeysBind) => string | void | undefined);
+	};
 	/**
 	 * Wether to cache the request - true by default
 	 */
@@ -125,7 +130,12 @@ export interface EndpointPostOptions<TKeys, TBody, TResult, TKeysBind = TKeys>
 	 * A function to create the url
 	 */
 	url: (keys: TKeysBind) => string;
-	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
+	headers?: {
+		[keys: string]:
+			| string
+			| undefined
+			| ((keys: TKeysBind) => string | void | undefined);
+	};
 	/**
 	 * A custom loader
 	 */
@@ -181,7 +191,12 @@ export interface EndpointPutOptions<TKeys, TBody, TResult, TKeysBind = TKeys>
 	 * A function to create the url
 	 */
 	url: (keys: TKeysBind) => string;
-	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
+	headers?: {
+		[keys: string]:
+			| string
+			| undefined
+			| ((keys: TKeysBind) => string | void | undefined);
+	};
 	/**
 	 * A custom loader
 	 */
@@ -237,7 +252,12 @@ export interface EndpointDeleteOptions<TKeys, TResult, TKeysBind = TKeys>
 	 * A function to create the url
 	 */
 	url: (keys: TKeysBind) => string;
-	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
+	headers?: {
+		[keys: string]:
+			| string
+			| undefined
+			| ((keys: TKeysBind) => string | void | undefined);
+	};
 	/**
 	 * A custom loader
 	 */
@@ -301,7 +321,12 @@ export interface EndpointGraphQlOptions<TKeys, TResult, TKeysBind = TKeys>
 	 * GraphQl Variables
 	 */
 	variables?: (keys: TKeysBind) => { [key: string]: any } | undefined;
-	headers?: { [keys: string]: string | ((keys: TKeysBind) => string) };
+	headers?: {
+		[keys: string]:
+			| string
+			| undefined
+			| ((keys: TKeysBind) => string | void | undefined);
+	};
 	/**
 	 * Wether to cache the request - true by default
 	 */
