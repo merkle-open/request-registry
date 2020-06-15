@@ -26,17 +26,21 @@
   },
   "devDependencies": {
     "@types/fetch-mock": "7.3.2",
-    "@types/jest": "25.1.2",
-    "fetch-mock": "8.3.2",
+    "@types/jest": "26.0.0",
+    "jest-environment-jsdom-sixteen": "1.0.3",
+    "fetch-mock": "9.10.1",
     "node-fetch": "2.6.0",
     "pkg-ok": "2.3.1",
-    "tsdx": "0.12.3",
-    "typescript": "3.7.5"
+    "tsdx": "0.13.2",
+    "typescript": "3.9.5"
   },
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
     }
+  },
+  "jest": {
+    "testEnvironment": "jest-environment-jsdom-sixteen"
   },
   "size-limit": [
     {
