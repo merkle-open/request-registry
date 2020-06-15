@@ -1,6 +1,6 @@
 {
   "name": "request-registry-react",
-  "version": "0.11.2",
+  "version": "0.12.0",
   "main": "dist/index.js",
   "umd:main": "dist/request-registry-react.umd.production.js",
   "module": "dist/request-registry-react.esm.js",
@@ -26,8 +26,8 @@
     "pkg-ok": "2.3.1",
     "react": "16.12.0",
     "react-dom": "16.12.0",
-    "request-registry": "^0.11.2",
-    "request-registry-mock": "^0.11.2",
+    "request-registry": "^0.12.0",
+    "request-registry-mock": "^0.12.0",
     "tsdx": "0.12.3",
     "tslib": "1.10.0",
     "typescript": "3.7.5"

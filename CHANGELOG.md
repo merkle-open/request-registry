@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [0.12.0](https://github.com/namics/request-registry/compare/v0.11.2...v0.12.0) (2020-06-15)
+
+
+### Features
+
+* **request-registry-react:** Filter headers when value is either undefined or void ([a0e44d9](https://github.com/namics/request-registry/commit/a0e44d9ea7fb56273fb1765a984eb45924ec691f))
+
+
+
+
+
 ## [0.11.2](https://github.com/namics/request-registry/compare/v0.11.1...v0.11.2) (2020-03-20)
 
 
