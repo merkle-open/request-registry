@@ -1,12 +1,12 @@
+import { render, waitFor } from "@testing-library/react";
 import * as React from "react";
-import { useGetEndPoint, useGetEndPointSuspendable } from "../src";
 import { createGetEndpoint } from "request-registry";
 import {
 	mockEndpoint,
-	unmockAllEndpoints,
-	mockEndpointOnce
+	mockEndpointOnce,
+	unmockAllEndpoints
 } from "request-registry-mock";
-import { render, wait } from "@testing-library/react";
+import { useGetEndPoint, useGetEndPointSuspendable } from "../src";
 
 afterAll(() => {
 	unmockAllEndpoints();
@@ -53,9 +53,9 @@ describe("request-registry-react", () => {
 				return <div>{endpointState.value.name}</div>;
 			};
 			const { container } = render(<UserDetails id="4" />);
-			await userEndpoint({ id: "4" });
-
-			expect(container.innerHTML).toEqual("<div>Alex</div>");
+			await waitFor(() =>
+				expect(container.innerHTML).toEqual("<div>Alex</div>")
+			);
 		});
 
 		it("rerenders data if cache is invalidated", async () => {
@@ -72,11 +72,13 @@ describe("request-registry-react", () => {
 				return <div>{endpointState.value.run}</div>;
 			};
 			const { container } = render(<Runs />);
-			await wait();
-			expect(container.innerHTML).toEqual("<div>0</div>");
+			await waitFor(() =>
+				expect(container.innerHTML).toEqual("<div>0</div>")
+			);
 			runsEndpoint.refresh();
-			await wait();
-			expect(container.innerHTML).toEqual("<div>1</div>");
+			await waitFor(() =>
+				expect(container.innerHTML).toEqual("<div>1</div>")
+			);
 		});
 
 		it("will take care of a slow outdated request", async () => {
@@ -86,7 +88,7 @@ describe("request-registry-react", () => {
 			>({
 				url: keys => `/user/${keys.id}`
 			});
-			mockEndpointOnce(
+			const unmockSlow = mockEndpoint(
 				userEndpoint,
 				async () => ({ name: "Slow", age: 20 }),
 				20
@@ -103,17 +105,21 @@ describe("request-registry-react", () => {
 			const { container } = render(<UserDetails id="4" />);
 			// Execute slow reqeust
 			const slowRequest = userEndpoint({ id: "4" });
+			await waitFor(() =>
+				expect(container.innerHTML).toEqual("<div>loading</div>")
+			);
+			unmockSlow();
 			mockEndpointOnce(
 				userEndpoint,
 				async () => ({ name: "Fast", age: 1 }),
 				1
 			);
 			userEndpoint.refresh();
-			// Execute fast request
-			await userEndpoint({ id: "4" });
-			await slowRequest;
 			// Make sure that the slow request which ended later is not shown in the result:
-			expect(container.innerHTML).toEqual("<div>Fast</div>");
+			await waitFor(() =>
+				expect(container.innerHTML).toEqual("<div>Fast</div>")
+			);
+			await slowRequest;
 		});
 
 		it("will send the ajax requests if not explicitly disabled", async () => {
@@ -124,7 +130,7 @@ describe("request-registry-react", () => {
 				url: keys => `/user/${keys.id}`
 			});
 			let endpointExecutionCount = 0;
-			mockEndpointOnce(userEndpoint, async () => {
+			mockEndpoint(userEndpoint, async () => {
 				endpointExecutionCount++;
 				return { name: "Joe", age: 20 };
 			});
@@ -141,8 +147,10 @@ describe("request-registry-react", () => {
 				}
 				return <div>{endpointState.value.name}</div>;
 			};
-			render(<UserDetails id="4" />);
-			await new Promise(resolve => process.nextTick(resolve));
+			const { container } = render(<UserDetails id="4" />);
+			await waitFor(() =>
+				expect(container.innerHTML).toEqual("<div>Joe</div>")
+			);
 			// Verify that the request was executed
 			expect(endpointExecutionCount).toEqual(1);
 		});
@@ -173,13 +181,12 @@ describe("request-registry-react", () => {
 				return <div>{endpointState.value.name}</div>;
 			};
 			render(<UserDetails id="4" />);
-			await new Promise(resolve => process.nextTick(resolve));
 			// Verify that the request was not executed
 			expect(endpointExecutionCount).toEqual(0);
 		});
 	});
 	describe("useGetEndPointSuspendable", () => {
-		it("renders loading state", () => {
+		it("renders loading state", async () => {
 			const userEndpoint = createGetEndpoint<
 				{ id: string },
 				{ name: string }
@@ -199,6 +206,9 @@ describe("request-registry-react", () => {
 				</React.Suspense>
 			);
 			expect(container.innerHTML).toEqual("<div>loading</div>");
+			await waitFor(() =>
+				expect(container.innerHTML).toEqual("<div>Alex</div>")
+			);
 		});
 
 		it("renders values", async () => {
@@ -220,8 +230,10 @@ describe("request-registry-react", () => {
 					<UserDetails id="4" />
 				</React.Suspense>
 			);
-			await wait();
-			expect(container.innerHTML).toEqual("<div>Alex</div>");
+
+			await waitFor(() =>
+				expect(container.innerHTML).toEqual("<div>Alex</div>")
+			);
 		});
 	});
 });
