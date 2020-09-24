@@ -11,7 +11,7 @@ Features:
 ## Getting started
 
 ```
-npm install --save request-registry registry-request-react
+npm install --save request-registry request-registry-react
 ```
 
 ## Api
