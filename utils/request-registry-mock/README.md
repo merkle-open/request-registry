@@ -5,7 +5,7 @@ Helper to create type-safe mocks for unit tests or demos similar to [fetch-mock]
 ## Getting started
 
 ```
-npm install --save-dev registry-request-mock
+npm install --save-dev request-registry-mock
 ```
 
 ## Api
@@ -16,6 +16,8 @@ The `mockEndpoint` is the main feature of this package.
 If executed on an endpoint it will overwrite the original data fetch logic with the given one.
 
 ```js
+import {mockEndpoint} from 'request-registry-mock';
+
 const userEndpoint = createGetEndpoint({ url: () => '/user' });
 mockEndpoint(getUserName, async () => ({ name: 'Joe' }));
 console.log(await userEndpoint()); // Will return the mocked value `{name: 'Joe'}`
@@ -28,6 +30,8 @@ The `createMockEndpoint` allows to create a mock controller for an endpoint
 #### simple usage:
 
 ```js
+import {createMockEndpoint} from 'request-registry-mock';
+
 const userJoeMock = createMockEndpoint(getUserName, async () => ({
     name: 'Joe',
 }));
@@ -42,6 +46,8 @@ userJoeMock.clear();
 A mock can also be based on the request information.
 
 ```js
+import {createMockEndpoint} from 'request-registry-mock';
+
 // Wait 400ms before responding with the mock result:
 const delay = 400;
 
@@ -81,6 +87,8 @@ Activate multiple mocks at once
 Usage:
 
 ```js
+import {createMockEndpoint} from 'request-registry-mock';
+
 const userJoeMock = createMockEndpoint(getUserName, async () => ({
     name: 'Joe',
 }));
@@ -95,6 +103,8 @@ Will clear all previously activated mocks
 Usage:
 
 ```js
+import {unmockAllEndpoints} from 'request-registry-mock';
+
 unmockAllEndpoints();
 ```
 
