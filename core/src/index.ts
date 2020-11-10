@@ -10,7 +10,11 @@ import { AjaxError as AjaxErrorType } from "./lib/errorHandler";
 export { ERROR_EMITTER } from "./lib/errorHandler";
 export type AjaxError = AjaxErrorType;
 
-/** Default Headers for POST and PUT requests */
+/**
+ * Default Headers for POST and PUT requests
+ *
+ * Can be overwritten by setting it to `undefined`.
+ */
 const defaultSendHeaders = { "Content-Type": "application/json" } as const;
 
 // GET Options
