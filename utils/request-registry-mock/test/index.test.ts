@@ -202,6 +202,33 @@ describe('request-registry-mock', () => {
 		});
 	});
 
+	describe('unmockAllEndpoints', () => {
+		it('should clear cache during unmocking', async () => {
+			const setEmailEndpoint = createPutEndpoint<
+				{ userId: string },
+				{ email: string }
+			>({
+				url: ({ userId }) => `/user/${userId}`,
+			});
+			mockEndpoint(setEmailEndpoint, async () => undefined);
+			await setEmailEndpoint({ userId: '1' }, { email: 'alex@host.com' });
+			unmockAllEndpoints();
+			let error;
+			try {
+				await setEmailEndpoint(
+					{ userId: '1' },
+					{ email: 'alex@host.com' }
+				);
+			} catch (e) {
+				error = e;
+			}
+			// Expect test to fail as no mock is in place:
+			expect(String(error)).toEqual(
+				'ReferenceError: fetch is not defined'
+			);
+		});
+	});
+
 	describe('PUT', () => {
 		it('should return the put response', async () => {
 			const setEmailEndpoint = createPutEndpoint<
