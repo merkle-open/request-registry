@@ -201,7 +201,7 @@ export function mockEndpoint<
 		body?: EndpointBody<TEndpoint>
 	) {
 		const args = arguments;
-		const mockResult = new Promise(resolve =>
+		const mockResult = new Promise<void>(resolve =>
 			delay ? setTimeout(resolve, delay) : resolve()
 		).then(
 			() =>
@@ -255,8 +255,13 @@ function unmockEndpoint(
 		// If no loaderFunction was given Erase all loaders
 		const originalLoader = originalLoadersOfEndpoint.splice(0)[0];
 		/* istanbul ignore else */
-		if (originalLoader) {
+		if (originalLoader && endpoint.loader !== originalLoader) {
 			endpoint.loader = originalLoader;
+			// Make sure that further access to the endpoint will not
+			// be a cached version of this mock
+			if ('cache' in endpoint && endpoint.cache) {
+				endpoint.cache.clear();
+			}
 		}
 	} else {
 		// If the loaderFunction is not active remove it from the mock queue
@@ -284,7 +289,7 @@ export function mockEndpointOnce<
 >(endpoint: TEndpoint, mockResponse: TMockResponse, delay?: number) {
 	const unmockingMockResponse: TMockResponse = function(...args: any) {
 		unmockEndpoint(endpoint, mockResponse);
-		return new Promise(resolve =>
+		return new Promise<void>(resolve =>
 			delay ? setTimeout(resolve, delay) : resolve()
 		).then(() => (mockResponse as any).apply(null, args));
 	} as any;

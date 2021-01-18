@@ -30,7 +30,7 @@
     "fetch-mock": "8.3.2",
     "node-fetch": "2.6.1",
     "pkg-ok": "2.3.1",
-    "tsdx": "0.12.3",
+    "tsdx": "0.14.1",
     "typescript": "3.7.5"
   },
   "config": {

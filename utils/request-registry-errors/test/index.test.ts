@@ -16,6 +16,16 @@ function triggerEvent(error?: Error | null) {
 }
 
 describe('request-registry-error', () => {
+	// reuqest-registry-error emits intentionally errors
+	// to prevent tests from failing turn console.error into a noop
+	let consoleError = console.error;
+	beforeEach(() => {
+		console.error = () => {};
+	});
+	afterEach(() => {
+		console.error = consoleError;
+	});
+
 	describe('getRequestRegistryErrorDetails', () => {
 		it('should fire on errors', () => {
 			let errorMessage = '';
