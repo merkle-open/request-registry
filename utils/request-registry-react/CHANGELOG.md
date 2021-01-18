@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.2](https://github.com/namics/request-registry/compare/v0.12.1...v0.12.2) (2021-01-18)
+
+
+### Bug Fixes
+
+* **request-registry-mock:** Clear cache during unmocking ([#26](https://github.com/namics/request-registry/issues/26)) ([9a32a42](https://github.com/namics/request-registry/commit/9a32a4269145c25923d6d0863e5938b053086a4c))
+
+
+
+
+
 ## [0.12.1](https://github.com/namics/request-registry/compare/v0.12.0...v0.12.1) (2020-11-10)
 
 **Note:** Version bump only for package request-registry-react
