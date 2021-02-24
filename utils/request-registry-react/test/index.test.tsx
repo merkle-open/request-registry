@@ -58,6 +58,46 @@ describe("request-registry-react", () => {
 			expect(container.innerHTML).toEqual("<div>Alex</div>");
 		});
 
+		it("renders error state", async () => {
+			const userEndpoint = createGetEndpoint<
+				{ id: string },
+				{ name: string }
+			>({
+				url: ({ id }) => `/user/${id}`
+			});
+			mockEndpoint(userEndpoint, () => {
+				throw new Error("User not found");
+			});
+
+			const UserDetails = (props: { id: string }) => {
+				const endpointState = useGetEndPoint(
+					userEndpoint,
+					{
+						id: props.id
+					},
+					true,
+					true
+				);
+				if (endpointState.state === "LOADING") {
+					return <div>loading</div>;
+				}
+				if (endpointState.state === "ERROR") {
+					const error = endpointState.error as Error;
+					return <div>error message: {error.message}</div>;
+				}
+				return <div>{endpointState.value.name}</div>;
+			};
+			const { container } = render(<UserDetails id="4" />);
+
+			await userEndpoint({ id: "4" }).catch(() => {});
+
+			await wait();
+
+			expect(container.innerHTML).toEqual(
+				"<div>error message: User not found</div>"
+			);
+		});
+
 		it("rerenders data if cache is invalidated", async () => {
 			const runsEndpoint = createGetEndpoint<{}, { run: number }>({
 				url: () => `/runs`

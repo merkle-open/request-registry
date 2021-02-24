@@ -29,12 +29,14 @@ export function useGetEndPoint<
 export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 	endpoint: TEndpoint,
 	keys: EndpointKeys<TEndpoint>,
-	executeAjax?: boolean
+	executeAjax?: boolean,
+	catchErrors?: boolean
 ): EndpointState<EndpointResult<TEndpoint>>;
 export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 	endpoint: TEndpoint,
 	keysArg?: EndpointKeys<TEndpoint>,
-	executeAjax?: boolean
+	executeAjax?: boolean,
+	catchErrors?: boolean
 ): EndpointState<EndpointResult<TEndpoint>> {
 	// Allow effects to access the latest key values
 	const keys = keysArg || {};
@@ -73,13 +75,15 @@ export function useGetEndPoint<TEndpoint extends EndpointGetFunction<any, any>>(
 					value: result
 				});
 			},
-			error => {
+			(error): any => {
 				updateEndpointState({
 					type: "receiveError",
 					promise: currendEndpointPromise,
 					value: error
 				});
-				return Promise.reject(error);
+				if (!catchErrors) {
+					return Promise.reject(error);
+				}
 			}
 		);
 		return currendEndpointPromise;
@@ -189,6 +193,7 @@ export function useGetEndPointLazy<
 		value: undefined,
 		state: "LOADING",
 		hasData: false,
+		error: undefined,
 		promise: new Promise(() => {})
 	};
 	return typeof window === "undefined"
@@ -206,6 +211,7 @@ type EndpointState<TResult> =
 			value: undefined;
 			state: "LOADING";
 			hasData: false;
+			error: undefined;
 			promise: Promise<TResult>;
 	  }
 	| {
@@ -213,6 +219,7 @@ type EndpointState<TResult> =
 			value: undefined;
 			state: "ERROR";
 			hasData: false;
+			error: unknown;
 			promise: Promise<TResult>;
 	  }
 	| {
@@ -220,6 +227,7 @@ type EndpointState<TResult> =
 			value: TResult;
 			state: "UPDATING";
 			hasData: true;
+			error: undefined;
 			promise: Promise<TResult>;
 	  }
 	| {
@@ -227,6 +235,7 @@ type EndpointState<TResult> =
 			value: TResult;
 			state: "DONE";
 			hasData: true;
+			error: undefined;
 			promise: Promise<TResult>;
 	  };
 
@@ -237,6 +246,7 @@ const initialEndpointState = <TEndpoint extends EndpointGetFunction<any, any>>(
 	value: undefined,
 	state: "LOADING",
 	hasData: false,
+	error: undefined,
 	promise: initialLoad()
 });
 
@@ -266,6 +276,7 @@ function endpointStateReducer<TEndpoint extends EndpointGetFunction<any, any>>(
 				promise: action.promise,
 				state: "LOADING",
 				busy: true,
+				error: undefined,
 				hasData: false,
 				value: undefined
 			};
@@ -274,6 +285,7 @@ function endpointStateReducer<TEndpoint extends EndpointGetFunction<any, any>>(
 			state: "UPDATING",
 			busy: true,
 			hasData: true,
+			error: state.error,
 			value: state.value
 		};
 	}
@@ -288,6 +300,7 @@ function endpointStateReducer<TEndpoint extends EndpointGetFunction<any, any>>(
 				state: "DONE",
 				busy: false,
 				hasData: true,
+				error: undefined,
 				value: action.value
 			};
 		case "receiveError":
@@ -296,6 +309,7 @@ function endpointStateReducer<TEndpoint extends EndpointGetFunction<any, any>>(
 				state: "ERROR",
 				busy: false,
 				hasData: false,
+				error: action.value,
 				value: undefined
 			};
 		/* istanbul ignore next */
