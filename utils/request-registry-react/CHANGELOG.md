@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.12.3](https://github.com/namics/request-registry/compare/v0.12.2...v0.12.3) (2021-02-24)
+
+
+### Bug Fixes
+
+* **request-registry-react:** useGetEndpoint will now also return the error object if a request failed ([8881419](https://github.com/namics/request-registry/commit/8881419c38b2d7f45f5078560da94c523943b30b))
+
+
+
+
+
 ## [0.12.2](https://github.com/namics/request-registry/compare/v0.12.1...v0.12.2) (2021-01-18)
 
 
