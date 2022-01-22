@@ -28,7 +28,7 @@
     "@types/fetch-mock": "7.3.2",
     "@types/jest": "25.1.2",
     "fetch-mock": "8.3.2",
-    "node-fetch": "2.6.1",
+    "node-fetch": "3.1.1",
     "pkg-ok": "2.3.1",
     "tsdx": "0.14.1",
     "typescript": "3.7.5"
